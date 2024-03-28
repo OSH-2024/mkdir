@@ -1,7 +1,7 @@
 # <p align = "center">mkdir：用 Rust 改写 Linux</p>
 
-![mkdir Logo](logo.webp)
 
+![mkdir Logo](src/logo.webp)
 欢迎来到 **mkdir** 团队的官方 GitHub 仓库，我们的项目致力于用 Rust 语言重写 Linux 操作系统。我们的目标是利用 Rust 的安全性和性能，为世界上最具影响力的操作系统之一带来全新的视角。
 
 ## 团队成员
