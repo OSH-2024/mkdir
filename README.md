@@ -1,4 +1,4 @@
-# mkdir：用 Rust 改写 Linux
+# <p align = "center">mkdir：用 Rust 改写 Linux</p>
 
 ![mkdir Logo](logo.webp)
 
@@ -77,6 +77,6 @@ Linux 一直是开源世界的基石，其多功能性和稳定性使得其应�
 ## 联系方式
 如有任何关于项目的询问或讨论，欢迎开设 `issue` 或通过 `QQ群：881491834`  联系我们。
 
-编码愉快！
+祝编码愉快！
 
 mkdir 团队
