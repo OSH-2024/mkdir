@@ -18,12 +18,12 @@
     }
     fn main()
     {
-        println!("call c->abs :{}",unsafe{abs(-32)});
+        println!("call c->abs :{}",unsafe{abs(-32)});  
         println!("call c -> sqrt:{}",unsafe{sqrt(36.0)});
     }
     ```
     执行后得到结果符合预期：
-    > call c->abs :32     
+    > call c -> abs :32     
     > call c -> sqrt:6
 
 
@@ -34,6 +34,8 @@
     > gcc版本：gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
     
     1. 代码架构：   
+    
+        ```
         .   
         ├── build.rs    
         ├── c   
@@ -51,7 +53,7 @@
         │   ├── main.c  
         │   └── Makefile    
         ├── src 
-        │   └── lib.rs  
+        │   └── main.rs  
         └── target  
             ├── CACHEDIR.TAG    
             ├── debug   
@@ -60,7 +62,10 @@
                 ├── incremental 
                 ├── libtest.a   
                 └── libtest.d   
+        ```
+    
         
+    
     2. 准备：C函数静态链接     
         ```c
         //example.c
@@ -68,7 +73,7 @@
         int add(int a, int b) {
             return a + b;
         }
-
+        
         //example.h:
         #ifndef EXAMPLE_H
         #define EXAMPLE_H
@@ -80,10 +85,9 @@
             
         将目标文件 libexample.o 打包成静态链接库    
         `ar rcs libexample.a libexample.o`
-
+    
         那么在/c目录下有了libexample.a可以被调用
-
-
+    
     3. 在rust中调用静态链接：
         1. build.rs的建立：     
            在与src文件夹平级的位置建立build.rs文件  
@@ -101,11 +105,11 @@
             version = "0.1.0"
             edition = "2021"
             build = "build.rs"
-
+           
             #[lib]
             #name = "osh"
             #crate-type = ["staticlib"]
-
+           
             [dependencies]
             libc = "0.2"
             [build-dependencies]
@@ -116,7 +120,7 @@
            //main.rs
            extern crate libc;
            use libc::c_int;
-
+           
            extern "C" {
                fn add(a: c_int, b: c_int) -> c_int;
            }
@@ -128,81 +132,83 @@
                println!("{}",result);
            }
            ```
-        4. 运行cargo run得到执行结果
+        4. 运行cargo run得到执行结果（注意/src文件夹下面同时存在mian.rs和lib.rs程序时，代码没法正常运行，不知道原因，还待了解）
 
 
-    4. 在C程序中调用rust生成的静态链接
-       1. rust准备      
-          需要使用 extern "C" 来声明外部函数，并且使用 #[no_mangle] 来禁用 Rust 的名称修饰
-          ```rust
-          extern crate libc;
-          use libc::c_int;
-          extern "C" {
-              fn add(a: c_int, b: c_int) -> c_int;
-          }
-          #[no_mangle]
-          pub extern "C" fn fibonacci(n: c_int) -> c_int {
-              match n {
-                  0 => 0,
-                  1 => 1,
-                  _ => unsafe{add(fibonacci(n - 1) , fibonacci(n - 2))},
-              }
-          }
-
-          ```
-        2. Cargo.toml
-           ```toml
-           [package]
-           name = "search"
-           version = "0.1.0"
-           edition = "2021"
-           build="build.rs"
-
-           [lib]
-           name = "search"
-           crate-type = ["staticlib"]
-
-           [dependencies]
-           libc = "0.2"
-           [build-dependencies]
-           cc = "1.0"
-
-           ```
-        3. 使用`cargo build --release`编译Rust 项目，并在 target\release 目录下生成库文件
-        4. 调用
-           ```c
-           //c_fact/test.c
-            #include <stdio.h>
-
-            extern unsigned int fibonacci(unsigned int n);
-
-            int main() {
-                while (1)
-                {
-                    int n;
-                    scanf("%d",&n);
-                    unsigned int result = fibonacci(n);
-                    printf("Fibonacci(10) = %u\n", result);
-                }
-                
-                
-                return 0;
-            }
-
-           ```
-           Makefile文件：
-           ```makefile
-            LIB_DIR1 = ../target/release
-            LIB_DIR2 = ../c
-            main: main.c
-                gcc -o main test.c -L$(LIB_DIR1) -L$(LIB_DIR2) -losh -lexample
-            .PHONY: clean
-            clean:
-                rm -f ./main
-           ```
-           运行make指令即可生成目标文件
+3. 在C程序中调用rust生成的静态链接
+    1. rust准备      
+       需要使用 extern "C" 来声明外部函数，并且使用 #[no_mangle] 来禁用 Rust 的名称修饰      
+       在 Rust 中，使用`unsafe` 关键字的使用是为了标记代码块，表明其中包含的操作可能会违反 Rust 的安全性保证。Rust 语言设计的核心理念之一是内存安全和线程安全，因此它在编译时会执行严格的检查，以确保代码不会出现悬挂指针、内存泄漏、数据竞争等问题。然而，有些情况下，我们需要绕过这些检查，进行一些 Rust 不允许的操作，这就是使用 unsafe 关键字的原因。
+       ```rust
+       extern crate libc;
+       use libc::c_int;
+       extern "C" {
+           fn add(a: c_int, b: c_int) -> c_int;
+       }
+       #[no_mangle]
+       pub extern "C" fn fibonacci(n: c_int) -> c_int {
+           match n {
+               0 => 0,
+               1 => 1,
+               _ => unsafe{add(fibonacci(n - 1) , fibonacci(n - 2))},
+           }
+       }
+       
+       ```
+     2. Cargo.toml
+        ```toml
+        [package]
+        name = "search"
+        version = "0.1.0"
+        edition = "2021"
+        build="build.rs"
+        
+        [lib]
+        name = "search"
+        crate-type = ["staticlib"]
+        
+        [dependencies]
+        libc = "0.2"
+        [build-dependencies]
+        cc = "1.0"
+        
+        ```
+     3. 使用`cargo build --release`编译Rust 项目，并在 target\release 目录下生成库文件
+     4. 调用
+        ```c
+        //c_fact/test.c
+         #include <stdio.h>
+        
+         extern unsigned int fibonacci(unsigned int n);
+        
+         int main() {
+             while (1)
+             {
+                 int n;
+                 scanf("%d",&n);
+                 unsigned int result = fibonacci(n);
+                 printf("Fibonacci(10) = %u\n", result);
+             }
+             
+             
+             return 0;
+         }
+        
+        ```
+        Makefile文件：
+        ```Makefile
+         LIB_DIR1 = ../target/release
+         LIB_DIR2 = ../c
+         main: main.c
+             gcc -o main test.c -L$(LIB_DIR1) -L$(LIB_DIR2) -losh -lexample
+         .PHONY: clean
+         clean:
+             rm -f ./main
+        ```
+        运行make指令即可生成目标文件
     
-
+## 参考文献
+https://blog.csdn.net/wowotuo/article/details/132916565
 
 ## 致谢
 本项目得到了中国科学技术大学 Vlab 实验平台的帮助与支持。    
