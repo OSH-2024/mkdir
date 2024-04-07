@@ -1,8 +1,7 @@
-# 从源码看可行性
-分析三个部分
+# 从源码视角分析可行性
+分析以下部分：
 1. samples/rust/ 下的样例源代码
-2. rust/ 下的Rust支持代码 
-3. Kernel hacking 下的 Rust hacking 菜单
+2. Kernel hacking 下的 Rust hacking 菜单
 
 ## samples/rust/ 下的样例源代码 
 ```shell
@@ -66,3 +65,26 @@ impl Drop for RustMinimal {
     }
 }
 ```
+
+
+
+# Kernel hacking 下的 Rust hacking 菜单
+```shell
+make menuconfig 
+```
+
+![alt text](image.png)
+
+分析如下：
+1. `Debug assertions`：这个选项可能会启用 Rust 的 debug 断言，这是一种在 debug 构建中检查代码的方式。如果一个断言失败了，程序会立即终止。这可以帮助开发者找到和修复 bugs。
+
+2. `Overflow checks`：这个选项可能会启用 Rust 的溢出检查。当数值运算结果超出类型能表示的范围时，Rust 会抛出一个溢出错误。这可以防止一些潜在的错误和安全问题。
+
+3. `Allow unoptimized build-time assertions`:这个选项可能会允许在未优化的构建中使用断言。这可能会使得 debug 构建更慢，但是可以提供更多的错误检查。
+
+
+
+
+
+
+
