@@ -586,7 +586,8 @@ impl Drop for RustMinimal {
 make menuconfig 
 ```
 
-![alt text](image.png)
+![image](https://github.com/OSH-2024/mkdir/assets/161458262/f044ded4-96d9-454a-9e89-78a397395ca7)
+
 
 分析如下：
 1. `Debug assertions`：这个选项可能会启用 Rust 的 debug 断言，这是一种在 debug 构建中检查代码的方式。如果一个断言失败了，程序会立即终止。这可以帮助开发者找到和修复 bugs。
@@ -653,7 +654,7 @@ fn expensive_function() -> u64 {
 }
 ```
 这段RUST代码中的 expensive_function() 完成了从1加到1亿并返回结果的功能，并且这个函数被调用了10次。以下是运行时间：
-![alt text](image-1.png)
+![image](https://github.com/OSH-2024/mkdir/assets/161458262/850c203f-d159-43ba-98ae-0f4ca1d9b271)
 
 计算平均值得到，这个程序运行时间约为1.849s
 ##### C++串行程序
@@ -685,7 +686,8 @@ int main() {
 }
 ```
 同样，这段C++代码中的 expensive_function() 依然是完成了与刚才RUST中函数一样的效果，并且这个函数也被调用了10次，因此两种语言所写的程序完成的任务是一致的。以下是该程序的运行时间：
-![alt text](image-2.png)
+![image](https://github.com/OSH-2024/mkdir/assets/161458262/6e3e716b-8e13-4496-9521-c080016aa612)
+
 
 计算平均值得到，这个程序运行时间约为1.438s
 ##### 串行测试小结
@@ -736,7 +738,8 @@ fn main() {
 }
 ```
 这段代码中的 expensive_function() 实现了十个线程对互斥资源 num 分别累加10次的操作，在main函数中这个函数被调用了10000次，以下是运行时间：
-![alt text](image-3.png)
+![image](https://github.com/OSH-2024/mkdir/assets/161458262/9d06314c-dcaf-4543-a37d-b7fdbbc480c4)
+
 
 计算平均值得到，这个程序运行时间约为2.833s
 ##### C++并行程序
@@ -798,7 +801,8 @@ int main() {
 }
 ```
 这段代码与上面RUST语言写的并行代码相同，函数是十个线程对同一个互斥资源进行累加操作，并且这个函数被调用了10000次，以下是运行时间：
-![alt text](image-4.png)
+![image](https://github.com/OSH-2024/mkdir/assets/161458262/a92d347c-1512-41e5-be51-049c26536f6f)
+
 
  计算平均值得到，这个程序运行时间约为2.906s
  ##### 并行测试小结
