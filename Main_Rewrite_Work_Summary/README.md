@@ -15,6 +15,7 @@
 金培晟：改写842-882行的bpf_send_signal_common函数 <br>
 潘铂凯：改写174-190行的bpf_probe_read_user_common & BPF_CALL_3函数 <br>
 胡揚嘉：改写1052-1062行get_entry_ip函数
+胡揚嘉：改写1779-1792行tp_prog_is_valid_access函数
 
 
 ## 现已完成代码段汇总
@@ -32,6 +33,7 @@
 908-936 <br>
 1052-1052<br>
 1168-1175 <br>
+1779-1792<br>
 
 
 ## 小组工作交流栏
