@@ -9,7 +9,7 @@
 潘铂凯：改写372-398行的BPF_CALL_5函数 <br>
 潘铂凯：改写761-776行的BPF_CALL_0函数 <br>
 刘宇恒：改写BPF_CALL_2这一宏（先转化成Rust形式，指针问题尚未处理） <br>
-潘铂凯：改写252-271行的bpf_probe_read_kernel_str_common函数 <br>
+潘铂凯：改写252-277行的bpf_probe_read_kernel_str_common函数 <br>
 王翔辉：改写399-405行的bpf_func_proto 部分 <br>
 王翔辉：改写407-420行的_set_printk_clr_event函数 <br>
 金培晟：改写842-882行的bpf_send_signal_common函数 <br>
@@ -18,7 +18,7 @@
 **（请按顺序填写）** <br>
 111-156 <br>
 200-220 <br>
-252-271 <br>
+252-277 <br>
 361-371 <br>
 372-398 <br>
 399-405 <br>
