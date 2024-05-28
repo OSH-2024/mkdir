@@ -13,10 +13,13 @@
 王翔辉：改写399-405行的bpf_func_proto 部分 <br>
 王翔辉：改写407-420行的_set_printk_clr_event函数 <br>
 金培晟：改写842-882行的bpf_send_signal_common函数 <br>
+潘铂凯：改写174-190行的bpf_probe_read_user_common & BPF_CALL_3函数 <br>
+
 
 ## 现已完成代码段汇总
 **（请按顺序填写）** <br>
 111-156 <br>
+174-190 <br>
 200-220 <br>
 252-277 <br>
 361-371 <br>
