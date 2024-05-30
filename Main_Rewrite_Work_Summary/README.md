@@ -16,6 +16,7 @@
 潘铂凯：改写174-190行的bpf_probe_read_user_common & BPF_CALL_3函数 <br>
 胡揚嘉：改写1052-1062行get_entry_ip函数
 胡揚嘉：改写1779-1792行tp_prog_is_valid_access函数
+王翔辉：改写421-425行的 BpfFuncProto 部分 <br>
 
 
 ## 现已完成代码段汇总
@@ -28,6 +29,7 @@
 372-398 <br>
 399-405 <br>
 407-420 <br>
+421-425 <br>
 761-776 <br>
 842-882 <br>
 908-936 <br>
