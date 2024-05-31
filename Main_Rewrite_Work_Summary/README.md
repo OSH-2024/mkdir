@@ -14,9 +14,10 @@
 王翔辉：改写407-420行的_set_printk_clr_event函数 <br>
 金培晟：改写842-882行的bpf_send_signal_common函数 <br>
 潘铂凯：改写174-190行的bpf_probe_read_user_common & BPF_CALL_3函数 <br>
-胡揚嘉：改写1052-1062行get_entry_ip函数
-胡揚嘉：改写1779-1792行tp_prog_is_valid_access函数
+胡揚嘉：改写1052-1062行get_entry_ip函数 <br>
+胡揚嘉：改写1779-1792行tp_prog_is_valid_access函数 <br>
 王翔辉：改写421-425行的 BpfFuncProto 部分 <br>
+潘铂凯：改写1828-1855行的BPF_CALL_4函数 <br>
 
 
 ## 现已完成代码段汇总
@@ -36,6 +37,7 @@
 1052-1052<br>
 1168-1175 <br>
 1779-1792<br>
+1828-1855<br>
 
 
 ## 小组工作交流栏
