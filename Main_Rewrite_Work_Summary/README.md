@@ -22,6 +22,8 @@
 潘铂凯：改写1856-1886行的pe_prog_func_proto<br>
 潘铂凯：改写1991-2015行的raw_tp_prog_func_proto<br>
 潘铂凯：改写2125-2137行的raw_tp_writable_prog_is_valid_access<br>
+潘铂凯：改写2082-2089行的raw_tp_prog_is_valid_access<br>
+潘铂凯：改写2090-2097行的tracing_prog_is_valid_access<br>
 
 ## 现已完成代码段汇总
 **（请按顺序填写）** <br>
@@ -43,6 +45,8 @@
 1828-1855<br>
 1856-1886<br>
 1991-2015<br>
+2082-2089<br>
+2090-2097<br>
 2125-2137<br>
 407-419<br>（改重了）
 
