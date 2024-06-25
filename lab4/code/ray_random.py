@@ -2,8 +2,8 @@ import random
 #import math
 import time
 import ray
-const_n=10000
-const_step=100000
+const_n=1_0000
+const_step=10_0000
 const_task_num=4
 const_part_num=4
 @ray.remote

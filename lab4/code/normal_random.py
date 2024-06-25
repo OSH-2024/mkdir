@@ -1,8 +1,8 @@
 import random
 #import math
 import time
-const_n=10000
-const_step=100000
+const_n=1_0000 #随机游走次数
+const_step=10_0000 #每次随机游走步数
 def random_walk(n):
     x, y = 0, 0
     for i in range(n):
