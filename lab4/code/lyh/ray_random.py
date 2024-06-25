@@ -1,5 +1,4 @@
 import random
-#import math
 import time
 import ray
 const_n=1_0000
