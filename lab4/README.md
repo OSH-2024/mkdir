@@ -1,1 +1,1 @@
-关于ray的部署已经发布到[Ray的部署、性能测试及优化](https://zhuanlan.zhihu.com/p/705383610)
+相关实验内容已经发布到[Ray的部署、性能测试及优化](https://zhuanlan.zhihu.com/p/705383610)
