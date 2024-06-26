@@ -26,6 +26,8 @@
 潘铂凯：改写2090-2097行的tracing_prog_is_valid_access<br>
 潘铂凯：改写2146-2183行的pe_prog_is_valid_access_access<br>
 潘铂凯：改写2884-2894行的has_module<br>
+潘铂凯：改写2934-2944行的addrs_check_error_injection_list<br>
+潘铂凯：改写2895-2933行的get_modules_for_addrs<br>
 
 
 ## 现已完成代码段汇总
@@ -54,6 +56,8 @@
 2146-2183<br>
 2884-2894<br>
 407-419<br>（改重了）
+2934-2944<br>
+2895-2933<br>
 
 
 ## 小组工作交流栏
