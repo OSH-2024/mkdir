@@ -29,7 +29,8 @@
 潘铂凯：改写2934-2944行的addrs_check_error_injection_list<br>
 潘铂凯：改写2895-2933行的get_modules_for_addrs<br>
 潘铂凯：改写2945-3086行的bpf_kprobe_multi_link_attach<br>
-
+潘铂凯：改写2844-2860行的symbols_swap_r<br>
+潘铂凯：改写3159-3227行的bpf_uprobe_multi_link_fill_link_info<br>
 
 ## 现已完成代码段汇总
 **（请按顺序填写）** <br>
@@ -56,10 +57,12 @@
 2090-2097<br>
 2125-2137<br>
 2146-2183<br>
+2844-2860<br>
 2884-2894<br>
 2895-2933<br>
 2934-2944<br>
 2945-3086<br>
+3159-3227<br>
 
 
 
