@@ -28,3 +28,35 @@
 定义一个结构体BpfBprintfData来存储打印数据。
 实现bpf_trace_vprintk函数，包括参数有效性检查、准备打印数据、格式化字符串输出以及清理资源。
 使用Rust的标准库和一些假设的外部函数（因为Rust标准库中没有直接与内核跟踪相关的函数）。
+
+# 6.28改写454-535行
+## 原代码分析
+这段C代码定义了几个与BPF（Berkeley Packet Filter）跟踪和序列化打印相关的函数和数据结构。每个部分的功能如下：
+
+1. **`bpf_trace_vprintk_proto`定义**:
+   - 定义了`bpf_trace_vprintk`函数的原型。这个函数用于内核跟踪点的打印操作。它标记为GPL仅限，返回整型值，并接受四个参数：第一个和第三个参数是指向只读内存的指针，第二个和第四个参数分别是常量大小和可能为零的常量大小。
+
+2. **`bpf_get_trace_vprintk_proto`函数定义**:
+   - 返回`bpf_trace_vprintk_proto`的引用，并通过调用`__set_printk_clr_event`函数设置打印事件。这个函数提供了一种机制来获取`bpf_trace_vprintk`函数的原型，以便在BPF程序中使用。
+
+3. **`bpf_seq_printf`函数定义**:
+   - 实现了一个序列化打印功能，用于将格式化文本输出到序列文件。它检查参数的有效性，准备打印数据，调用`seq_bprintf`进行格式化输出，最后清理打印数据。如果序列文件溢出，则返回错误。
+
+4. **`btf_seq_file_ids`定义**:
+   - 定义了一个BTF（BPF Type Format）ID列表，专门用于`seq_file`结构。这允许BPF程序通过BTF类型安全地引用`seq_file`结构。
+
+5. **`bpf_seq_printf_proto`定义**:
+   - 定义了`bpf_seq_printf`函数的原型。这个函数同样标记为GPL仅限，返回整型值，并接受五个参数，其中第一个参数是指向BTF ID的指针，其余参数用于指定打印内容和格式。
+
+6. **`bpf_seq_write`函数定义**:
+   - 实现了一个序列文件写入功能。它直接调用`seq_write`函数写入数据，如果写入操作导致溢出，则返回错误。
+
+7. **`bpf_seq_write_proto`定义**:
+   - 定义了`bpf_seq_write`函数的原型。这个函数也是GPL仅限，返回整型值，并接受三个参数，其中第一个参数是指向BTF ID的指针，其余两个参数用于指定写入的数据和长度。
+
+8. **`bpf_seq_printf_btf`函数定义**:
+   - 实现了基于BTF的序列化打印功能。它首先准备BTF打印数据，然后调用`btf_type_seq_show_flags`函数显示BTF类型信息。这个函数允许BPF程序以类型安全的方式打印BTF类型的数据。
+
+这些定义和函数为BPF程序提供了丰富的打印和序列化功能，使得内核跟踪和调试更加灵活和强大。
+
+## 改写分析
