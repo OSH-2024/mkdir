@@ -36,6 +36,8 @@
 王翔辉：改写537-546 行的结构体定义部分 <br>
 胡揚嘉：改写3458-3469行的bpf_uprobe_multi_函数部分  <br>
 胡揚嘉：改写3315-3456行的bpf_uprobe_multi_link_attach函数部分  <br>
+王翔辉：改写548-609 行的get_map_perf_counter等部分 <br>
+王翔辉：改写610-654 bpf_perf_event_read_value_proto结构体 __bpf_perf_event_output函数 <br>
 胡揚嘉：改写3327-3314行的函数部分  <br>
 
 ## 现已完成代码段汇总
@@ -52,6 +54,8 @@
 421-452 <br>
 454-535 <br>
 537-546 <br>
+548-609 <br>
+610-654 <br>
 761-776 <br>
 842-882 <br>
 908-936 <br>
