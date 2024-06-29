@@ -60,3 +60,31 @@
 这些定义和函数为BPF程序提供了丰富的打印和序列化功能，使得内核跟踪和调试更加灵活和强大。
 
 ## 改写分析
+
+# 6.29改写 548-609
+## 原代码分析
+这段代码是Linux内核中BPF（Berkeley Packet Filter）功能的一部分，主要用于读取性能计数器的值。它定义了几个函数，用于从特定的BPF映射中获取性能事件计数器的值。以下是各个部分的功能分析：
+
+1. **`get_map_perf_counter`函数**:
+   - 这是一个静态内联函数，用于从BPF映射中获取性能计数器的值。
+   - 它首先通过`container_of`宏将`bpf_map`结构体转换为`bpf_array`结构体。
+   - 使用`smp_processor_id`函数获取当前CPU的ID。
+   - 根据传入的`flags`参数，计算出要访问的索引。如果`flags`包含`BPF_F_CURRENT_CPU`，则使用当前CPU的ID作为索引。
+   - 检查索引是否超出了数组的最大条目数，如果超出则返回错误。
+   - 通过索引访问`ptrs`数组，获取对应的`bpf_event_entry`结构体。
+   - 调用`perf_event_read_local`函数读取性能事件计数器的值，并返回结果。
+
+2. **`bpf_perf_event_read`函数**:
+   - 这是一个宏定义的函数，用于读取性能计数器的值，但不包括`enabled`和`running`值。
+   - 它调用`get_map_perf_counter`函数获取计数器的值，并将结果直接返回。如果有错误，返回错误码。
+
+3. **`bpf_perf_event_read_proto`结构体**:
+   - 定义了`bpf_perf_event_read`函数的原型，包括函数指针、GPL许可要求、返回类型和参数类型。
+
+4. **`bpf_perf_event_read_value`函数**:
+   - 这也是一个宏定义的函数，用于读取性能计数器的值，包括`counter`、`enabled`和`running`。
+   - 首先检查传入的`size`参数是否等于`bpf_perf_event_value`结构体的大小，如果不等，则清零`buf`并返回错误。
+   - 调用`get_map_perf_counter`函数获取计数器的值，并填充到`buf`中。
+   - 如果调用`get_map_perf_counter`时发生错误，也会清零`buf`并返回错误码。
+
+总的来说，这段代码提供了从BPF映射中读取性能计数器值的功能，包括基本的计数器值以及额外的`enabled`和`running`信息。这对于性能监控和分析是非常有用的。
