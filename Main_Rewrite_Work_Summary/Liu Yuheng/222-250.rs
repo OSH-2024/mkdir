@@ -1,8 +1,10 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 fn bpf_probe_read_user_str(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_void>) -> i32{
-    let ret = bpf_probe_read_user_str_common(dst, size, unsafe_ptr);
-    ret
+    unsafe{
+        let ret = bpf_probe_read_user_str_common(dst.as_ptr(), size, unsafe_ptr.as_ptr());
+        ret
+    }
 }
 let bpf_probe_read_user_str_proto = BpfFuncProto {
     func: bpf_probe_read_user_str, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
@@ -13,7 +15,7 @@ let bpf_probe_read_user_str_proto = BpfFuncProto {
     arg3_type: ArgType::ARG_ANYTHING,
 };
 fn bpf_probe_read_kernel(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_void>) -> i32{
-    let ret = bpf_probe_read_kernel_common(dst, size, unsafe_ptr);
+    let ret = bpf_probe_read_kernel_common(dst.as_ptr(), size, unsafe_ptr.as_ptr());
     ret
 }
 let bpf_probe_read_kernel_proto = BpfFuncProto {
