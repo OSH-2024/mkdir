@@ -18,7 +18,6 @@
 胡揚嘉：改写1779-1792行tp_prog_is_valid_access函数 <br>
 王翔辉：改写421-425行的 BpfFuncProto 部分 <br>
 潘铂凯：改写1828-1855行的BPF_CALL_4函数 <br>
-刘宇恒：改写407-419行的__set_printk_clr_event<br>
 潘铂凯：改写1856-1886行的pe_prog_func_proto<br>
 潘铂凯：改写1991-2015行的raw_tp_prog_func_proto<br>
 潘铂凯：改写2125-2137行的raw_tp_writable_prog_is_valid_access<br>
