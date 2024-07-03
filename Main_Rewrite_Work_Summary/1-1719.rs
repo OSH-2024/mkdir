@@ -1,29 +1,18 @@
-//48-83
-// 引入Rust的标准库中的互斥锁和链表支持
 use std::collections::LinkedList;
 use std::sync::Mutex;
+use std::ptr;
+use libc::{c_char, size_t, strncpy};
+use std::ffi::c_void;
+use std::ptr::NonNull;
+use core::ffi::c_void;
+use std::io::{self, Write};
+use std::os::raw::{c_char, c_int, c_uint};
+use core::cell::UnsafeCell;
+use std::os::raw::{c_void};
+use kernel::THIS_MODULE;
+use kernel::prelude::*;
+//48-83
 
-// 假设的外部Rust结构体和函数
-// #[repr(C)]
-// struct Module {
-//     num_bpf_raw_events: u32,
-//     bpf_raw_events: *mut BpfRawEventMap,
-// }
-// 
-// #[repr(C)]
-// struct BpfRawEventMap {
-//     tp: *const Tracepoint,
-// }
-// 
-// #[repr(C)]
-// struct Tracepoint {
-//     name: *const c_char,
-// }
-// 
-// extern "C" {
-//     fn strcmp(s1: *const c_char, s2: *const c_char) -> c_int;
-//     fn try_module_get(module: *mut Module) -> bool;
-// }
 
 // Rust版本的`BpfTraceModule`结构体
 struct BpfTraceModule {
@@ -188,15 +177,14 @@ let bpf_probe_read_user_proto = BpfFuncProto {
     arg3_type: ArgType::ARG_ANYTHING,
 };
 //200-220
-use std::ptr;
+
 
 extern "C"
 {
     fn strncpy_from_user_nofault(dst: &mut [u8], unsafe_ptr: *const c_char, size: size_t) -> i32;
 }
 #[inline(always)]
-use libc::{c_char, size_t, strncpy};
-use std::ptr;
+
 
 fn bpf_probe_read_user_str_common(dst: &mut [u8], unsafe_ptr: *const c_char, size: size_t) -> i32 {
     // 这个函数将复制用户空间中的字符串到内核空间
@@ -222,8 +210,7 @@ fn bpf_probe_read_user_str_common(dst: &mut [u8], unsafe_ptr: *const c_char, siz
     return ret;
 }
 //222-250
-use std::ffi::c_void;
-use std::ptr::NonNull;
+
 fn bpf_probe_read_user_str(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_void>) -> i32{
     unsafe{
         let ret = bpf_probe_read_user_str_common(dst.as_ptr(), size, unsafe_ptr.as_ptr());
@@ -304,7 +291,7 @@ let bpf_probe_read_kernel_str_proto = BpfFuncProto {
     arg3_type: ArgType::ARG_ANYTHING,
 };
 //286-326
-use core::ffi::c_void;
+
 
 #[cfg(feature = CONFIG_ARCH_HAS_NON_OVERLAPPING_ADDRESS_SPACE)]
 BPF_CALL_3(bpf_probe_read_compat, *mut c_void, dst, u32, size, *const c_void, unsafe_ptr) 
@@ -346,8 +333,7 @@ let bpf_probe_read_compat_str_proto: bpf_func_proto=
     .arg3_type=ARG_ANYTHING,
 };
 //327-359
-use std::ffi::c_void;
-use std::ptr::NonNull;
+
 fn bpf_probe_write_user(unsafe_ptr:NonNull<c_void>,src:NonNull<c_void>,size:u32)->i32{
     unsafe{
         let in_interrupt_var = in_interrupt() as bool;
@@ -445,7 +431,7 @@ pub struct BpfFuncProto {
 //     // 其他参数类型
 // }
 //407-420
-use std::io::{self, Write};
+
 
 fn set_printk_clr_event() -> io::Result<()> {
     /*
@@ -537,8 +523,7 @@ fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len: u32) 
 }
 //454-535
 // 引入Rust标准库中的FFI（外部函数接口）相关功能
-use std::ffi::c_void;
-use std::os::raw::{c_char, c_int, c_uint};
+
 
 // 假设的外部结构体和函数
 // extern "C" {
@@ -890,7 +875,7 @@ let bpf_perf_event_read_value_proto = BpfFuncProto {
 
 // 注意：这里的代码示例包含了一些Rust不支持的操作，如直接的裸指针操作和类型转换，因此在实际应用中需要通过安全的封装来实现。
 //655-660
-use core::cell::UnsafeCell;
+
 
 // 定义与C语言兼容的结构体
 #[repr(C)]
@@ -929,8 +914,7 @@ impl<T> PerCpu<T> {
     }
 }
 //661-709
-use std::ffi::c_void;
-use std::ptr::NonNull;
+
 fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,data:NonNull<void>,size:u64)-> Result<(), i32>{
     let raw = perf_raw_record {
         frag: perf_frag_record {
@@ -983,7 +967,7 @@ let bpf_perf_event_output_proto = BpfFuncProto {
     arg5_type: ArgType:ARG_CONST_SIZE_OR_ZERO,
 };
 //711-716
-use core::cell::UnsafeCell;
+
 
 // 定义与C语言兼容的结构体
 #[repr(C)]
@@ -1388,7 +1372,7 @@ fn bpf_btf_printf_prepare(ptr: &BtfPtr, btf_ptr_size: u32, flags: u64) -> Result
 //     0
 // }
 
-use std::os::raw::{c_char, c_void};
+
 
 // Rust版本的bpf_snprintf_btf函数
 unsafe fn bpf_snprintf_btf(str: *mut c_char, str_size: u32, ptr: *const BtfPtr, btf_ptr_size: u32, flags: u64) -> i32 {
@@ -1620,8 +1604,7 @@ let  bpf_get_func_arg_proto = bpf_func_proto{
 	arg3_type	: ARG_PTR_TO_LONG,
 };
 //1230-1237
-use std::ffi::c_void;
-use std::ptr::NonNull;
+
 
 fn get_func_ret(ctx: NonNull<c_void>, value: NonNull<u64>) -> i32 {
     unsafe {
@@ -1712,8 +1695,7 @@ static BPF_GET_FUNC_ARG_CNT_PROTO: BpfFuncProto = BpfFuncProto {
 };
 #[cfg(CONFIG_KEYS)]
 mod bpf_kfunc {
-    use std::ptr;
-    use std::ffi::c_void;
+
 
     // 定义用于表示密钥的结构体
     pub struct BpfKey {
@@ -1762,8 +1744,7 @@ mod bpf_kfunc {
 }
 #[cfg(CONFIG_KEYS)]
 mod bpf_kfunc {
-    use std::ptr;
-    use std::ffi::c_void;
+
 
     // 定义用于表示密钥的结构体
     pub struct BpfKey {
@@ -1797,7 +1778,7 @@ mod bpf_kfunc {
 }
 #[cfg(CONFIG_KEYS)]
 mod bpf_kfunc {
-    use std::ffi::c_void;
+
 
     // 定义用于表示密钥的结构体
     pub struct BpfKey {
@@ -1820,7 +1801,7 @@ mod bpf_kfunc {
 }
 #[cfg(CONFIG_SYSTEM_DATA_VERIFICATION)]
 mod bpf_kfunc {
-    use std::ffi::c_void;
+
 
     // 定义用于表示动态指针的结构体
     pub struct BpfDynptrKern {
@@ -1903,9 +1884,7 @@ extern "C" {
 }
 #[cfg(CONFIG_KEYS)]
 mod bpf_kfunc {
-    use std::ptr;
-    use kernel::THIS_MODULE;
-    use kernel::prelude::*;
+
 
     // 定义用于表示 BTF 函数 ID 集合的结构体
     #[repr(C)]
@@ -2285,4 +2264,8 @@ struct BpfFuncProto {
 fn bpf_perf_event_output_tp(ctx: *const u8, map: *const u8, flags: u64, data: *const u8, size: usize) -> i32 {
     // 函数实现
     0
+}
+
+fn main(){
+    ;
 }
