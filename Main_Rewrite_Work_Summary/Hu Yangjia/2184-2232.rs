@@ -36,11 +36,22 @@ let perf_event_verifier_ops: bpf_verifier_ops = bpf_verifier_ops
 }
 
 
-"
-const struct bpf_prog_ops perf_event_prog_ops = {
+// 定义 perf_event 程序操作
+const PERF_EVENT_PROG_OPS: bpf_prog_ops = bpf_prog_ops {
+    // 这里可以添加 perf_event 程序操作的字段和函数指针
+    // 例如:
+    // run: None,
+    // verify: None,
+    // fixup_attach_type: None,
+    // init: None,
+    // check_attach_type: None,
+    // is_tracing_prog: None,
 };
 
-static DEFINE_MUTEX(bpf_event_mutex);
+// 定义 bpf_event_mutex 互斥锁
+lazy_static! {
+    static ref BPF_EVENT_MUTEX: Mutex<()> = Mutex::new(());
+}
 
-#define BPF_TRACE_MAX_PROGS 64
-"TODO 
+// 定义 BPF 跟踪程序的最大数量
+const BPF_TRACE_MAX_PROGS: usize = 64;
