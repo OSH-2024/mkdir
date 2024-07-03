@@ -15,8 +15,8 @@ fn set_printk_clr_event() -> io::Result<()> {
     Ok(())
 }
 
-// 将来需要根据实际情况定义这个函数
-fn trace_set_clr_event(event1: &str, event2: &str, flag: i32) -> io::Result<bool> {
-    // 实现这个函数
-    Ok(false)
-}
+// // 将来需要根据实际情况定义这个函数
+// fn trace_set_clr_event(event1: &str, event2: &str, flag: i32) -> io::Result<bool> {
+//     // 实现这个函数
+//     Ok(false)
+// }

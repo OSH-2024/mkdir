@@ -19,11 +19,11 @@ const MAX_BPRINTF_VARARGS: usize = 16;
 // 结构体定义
 #[repr(C)]
 struct SeqFile;
-#[repr(C)]
-struct BpfBprintfData {
-    get_bin_args: bool,
-    // 其他字段...
-}
+// #[repr(C)]
+// struct BpfBprintfData {
+//     get_bin_args: bool,
+//     // 其他字段...
+// }
 #[repr(C)]
 struct BtfPtr;
 #[repr(C)]

@@ -1,25 +1,25 @@
-// 假设的外部内容，用于提供必要的上下文
-const BPF_F_INDEX_MASK: u64 = 0x...; // 假设的掩码值
-const BPF_F_CURRENT_CPU: u64 = 0x...; // 表示当前CPU的特殊值
-const EINVAL: i32 = -22; // 无效参数错误码
-const E2BIG: i32 = -7; // 参数太大错误码
-const ENOENT: i32 = -2; // 没有该文件或目录的错误码
+// // 假设的外部内容，用于提供必要的上下文
+// const BPF_F_INDEX_MASK: u64 = 0x...; // 假设的掩码值
+// const BPF_F_CURRENT_CPU: u64 = 0x...; // 表示当前CPU的特殊值
+// const EINVAL: i32 = -22; // 无效参数错误码
+// const E2BIG: i32 = -7; // 参数太大错误码
+// const ENOENT: i32 = -2; // 没有该文件或目录的错误码
 
-// 假设的结构体和函数
-struct BpfMap {
-    // ...
-}
+// // 假设的结构体和函数
+// struct BpfMap {
+//     // ...
+// }
 
-struct BpfArray {
-    map: BpfMap,
-    ptrs: Vec<*mut BpfEventEntry>, // 使用裸指针，因为Rust不允许直接对应C的指针操作
-    // ...
-}
+// struct BpfArray {
+//     map: BpfMap,
+//     ptrs: Vec<*mut BpfEventEntry>, // 使用裸指针，因为Rust不允许直接对应C的指针操作
+//     // ...
+// }
 
-struct BpfEventEntry {
-    event: *mut PerfEvent, // 假设的性能事件结构体指针
-    // ...
-}
+// struct BpfEventEntry {
+//     event: *mut PerfEvent, // 假设的性能事件结构体指针
+//     // ...
+// }
 
 struct BpfPerfEventValue {
     counter: u64,
