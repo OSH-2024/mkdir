@@ -1,3 +1,4 @@
+use std::os::raw::c_void;
 
 // 1720-1732
 unsafe fn bpf_get_stackid_tp(tp_buff: *mut c_void, map: *mut BpfMap, flags: u64) -> i32 {
@@ -96,7 +97,7 @@ fn tp_prog_func_proto(func_id: BpfFuncId, prog: &BpfProg) -> &'static BpfFuncPro
         BpfFuncId::GetStackId => &BPF_GET_STACKID_PROTO_TP,
         BpfFuncId::GetStack => &BPF_GET_STACK_PROTO_TP,
         BpfFuncId::GetAttachCookie => &BPF_GET_ATTACH_COOKIE_PROTO_TRACE,
-        _ => bpf_tracing_func_proto(func_id, prog),
+        _ => unsafe{bpf_tracing_func_proto(func_id, prog)},
     }
 }
 
@@ -121,20 +122,7 @@ extern "C" {
 }
 
 // 1779-1792
-static bool tp_prog_is_valid_access(int off, int size, enum bpf_access_type type,
-    const struct bpf_prog *prog,
-    struct bpf_insn_access_aux *info)
-{
-    if (off < sizeof(void *) || off >= PERF_MAX_TRACE_SIZE)
-        return false;
-    if (type != BPF_READ)
-        return false;
-    if (off % size != 0)
-        return false;
 
-    BUILD_BUG_ON(PERF_MAX_TRACE_SIZE % sizeof(__u64));
-    return true;
-}
 
 // Compare this snippet from mkdir/Main_Rewrite_Work_Summary/Hu%20Yangjia/tp_prog_is_valid_access.rs:
 pub fn tp_prog_is_valid_access(off: i32, size: i32, type_: bpf_access_type, 
@@ -305,7 +293,7 @@ pub fn pe_prog_func_proto(func_id: bpf_func_id, prog: *const bpf_prog) -> *const
         BPF_FUNC_perf_prog_read_value => &bpf_perf_prog_read_value_proto,
         BPF_FUNC_read_branch_records => &BPF_READ_BRANCH_RECORDS_PROTO,
         BPF_FUNC_get_attach_cookie => &bpf_get_attach_cookie_proto_pe,
-        _ => bpf_tracing_func_proto(func_id, prog),
+        _ => unsafe{bpf_tracing_func_proto(func_id, prog)},
     }
 }
 
@@ -313,10 +301,10 @@ pub fn pe_prog_func_proto(func_id: bpf_func_id, prog: *const bpf_prog) -> *const
 struct  bpf_raw_tp_regs{
     regs: [pt_regs; 3],
 }
-unsafe{
-    bindings::DEFINE_PER_CPU(struct bpf_raw_tp_regs, bpf_raw_tp_regs);
-    bindings::DEFINE_PER_CPU(int, bpf_raw_tp_nest_level);
-}
+// unsafe{
+//     bindings::DEFINE_PER_CPU(struct bpf_raw_tp_regs, bpf_raw_tp_regs);
+//     bindings::DEFINE_PER_CPU(int, bpf_raw_tp_nest_level);
+// }
 fn get_bpf_raw_tp_regs()->*mut bpf_raw_tp_regs{
     unsafe{
         let mut tp_regs:NonNull<bpf_raw_tp_regs> = bindings::this_cpu_ptr(&bpf_raw_tp_regs);
@@ -329,7 +317,7 @@ fn get_bpf_raw_tp_regs()->*mut bpf_raw_tp_regs{
         Ok(regs_ptr)
     }
 }
-fn put_bpf_raw_tp_regs{
+fn put_bpf_raw_tp_regs(){
     unsafe{
         bindings::this_cpu_dec(bpf_raw_tp_nest_level);
     }
@@ -346,7 +334,9 @@ fn bpf_perf_event_output_raw_tp(args:NonNull<bpf_raw_tracepoint_args>,map:NonNul
         ret
     }
 }
-let  bpf_perf_event_output_proto_raw_tp = bpf_func_proto{
+
+// TODO:
+static  bpf_perf_event_output_proto_raw_tp: bpf_func_proto = bpf_func_proto{
 	func		: bpf_perf_event_output_raw_tp,
 	gpl_only	: true,
 	ret_type	: RET_INTEGER,
@@ -359,7 +349,7 @@ let  bpf_perf_event_output_proto_raw_tp = bpf_func_proto{
 extern "C" {
     static bpf_skb_output_proto: bpf_func_proto;
     static bpf_xdp_output_proto: bpf_func_proto;
-    static bpf_xdp_get_buff_len_trace_proto;
+    static bpf_xdp_get_buff_len_trace_proto: bpf_func_proto;
 }
 fn bpf_get_stackid_raw_tp(args:NonNull<bpf_raw_tracepoint_args>,map:NonNull<bpf_map>,flags:u64){
     unsafe{
@@ -373,7 +363,8 @@ fn bpf_get_stackid_raw_tp(args:NonNull<bpf_raw_tracepoint_args>,map:NonNull<bpf_
         ret
     }
 }
-let  bpf_get_stackid_proto_raw_tp = bpf_func_proto{
+// TODO:
+static  bpf_get_stackid_proto_raw_tp: bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_stackid_raw_tp,
 	gpl_only	: true,
 	ret_type	: RET_INTEGER,
@@ -412,7 +403,7 @@ pub fn raw_tp_prog_func_proto(func_id: bpf_func_id, prog: *const bpf_prog) -> *c
         BPF_FUNC_perf_event_output => &bpf_perf_event_output_proto_raw_tp,
         BPF_FUNC_get_stackid => &bpf_get_stackid_proto_raw_tp,
         BPF_FUNC_get_stack => &BPF_GET_STACK_PROTO_RAW_TP,
-        _ => bpf_tracing_func_proto(func_id, prog),
+        _ => unsafe{bpf_tracing_func_proto(func_id, prog)},
     }
 }
 
@@ -421,7 +412,7 @@ pub fn raw_tp_prog_func_proto(func_id: bpf_func_id, prog: *const bpf_prog) -> *c
 #[cfg(feature = CONFIG_NET)]
 fn tracing_prog_func_proto(func_id: bpf_func_id, prog: *mut bpf_prog )-> *mut bpf_func_proto
 {
-    let fn: *mut bpf_func_proto;
+    let fnn: *mut bpf_func_proto;
     match (func_id)
     {
         BPF_FUNC_skb_output => return &bpf_skb_output_proto,
@@ -438,21 +429,21 @@ fn tracing_prog_func_proto(func_id: bpf_func_id, prog: *mut bpf_prog )-> *mut bp
         BPF_FUNC_sock_from_file => return &bpf_sock_from_file_proto,
         BPF_FUNC_get_socket_cookie => return &bpf_get_socket_ptr_cookie_proto,
         BPF_FUNC_xdp_get_buff_len => return &bpf_xdp_get_buff_len_trace_proto,
-        BPF_FUNC_seq_printf => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_printf_proto : NULL,
-        BPF_FUNC_seq_write => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_write_proto : NULL,
-        BPF_FUNC_seq_printf_btf => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_printf_btf_proto : NULL,
-        BPF_FUNC_d_path => return &bpf_d_path_proto,
-        BPF_FUNC_get_func_arg => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_arg_proto : NULL,
-        BPF_FUNC_get_func_ret => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_ret_proto : NULL,
-        BPF_FUNC_get_func_arg_cnt => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_arg_cnt_proto : NULL,
-        BPF_FUNC_get_attach_cookie => return bpf_prog_has_trampoline(prog) ? &bpf_get_attach_cookie_proto_tracing : NULL,
+        BPF_FUNC_seq_printf => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_printf_proto } else{ NULL},
+        BPF_FUNC_seq_write => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_write_proto } else{ NULL},
+        BPF_FUNC_seq_printf_btf => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_printf_btf_proto } else{ NULL},
+        BPF_FUNC_d_path => return  &bpf_d_path_proto,
+        BPF_FUNC_get_func_arg => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_arg_proto } else{ NULL},
+        BPF_FUNC_get_func_ret => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_ret_proto } else{ NULL},
+        BPF_FUNC_get_func_arg_cnt => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_arg_cnt_proto } else{ NULL},
+        BPF_FUNC_get_attach_cookie => return if bpf_prog_has_trampoline(prog) { &bpf_get_attach_cookie_proto_tracing } else{ NULL},
         _ => {
-            fn = raw_tp_prog_func_proto(func_id, prog);
-            if !fn && prog->expected_attach_type == BPF_TRACE_ITER
+            fnn = raw_tp_prog_func_proto(func_id, prog);
+            if !fnn && prog.expected_attach_type == BPF_TRACE_ITER
             {
-                fn = bpf_iter_get_func_proto(func_id, prog);
+                fnn = bpf_iter_get_func_proto(func_id, prog);
             }
-            return fn;
+            return fnn;
         }
 
     }
@@ -461,24 +452,24 @@ fn tracing_prog_func_proto(func_id: bpf_func_id, prog: *mut bpf_prog )-> *mut bp
 #[cfg(not(feature = CONFIG_NET))]
 fn tracing_prog_func_proto(func_id: bpf_func_id, prog: *mut bpf_prog )-> *mut bpf_func_proto
 {
-    let fn: *mut bpf_func_proto;
+    let fnn: *mut bpf_func_proto;
     match (func_id)
     {
-        BPF_FUNC_seq_printf => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_printf_proto : NULL,
-        BPF_FUNC_seq_write => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_write_proto : NULL,
-        BPF_FUNC_seq_printf_btf => return prog->expected_attach_type == BPF_TRACE_ITER ? &bpf_seq_printf_btf_proto : NULL,
-        BPF_FUNC_d_path => return &bpf_d_path_proto,
-        BPF_FUNC_get_func_arg => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_arg_proto : NULL,
-        BPF_FUNC_get_func_ret => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_ret_proto : NULL,
-        BPF_FUNC_get_func_arg_cnt => return bpf_prog_has_trampoline(prog) ? &bpf_get_func_arg_cnt_proto : NULL,
-        BPF_FUNC_get_attach_cookie => return bpf_prog_has_trampoline(prog) ? &bpf_get_attach_cookie_proto_tracing : NULL,
+        BPF_FUNC_seq_printf => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_printf_proto } else{ NULL},
+        BPF_FUNC_seq_write => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_write_proto } else{ NULL},
+        BPF_FUNC_seq_printf_btf => return if prog.expected_attach_type == BPF_TRACE_ITER { &bpf_seq_printf_btf_proto } else{ NULL},
+        BPF_FUNC_d_path => return  &bpf_d_path_proto,
+        BPF_FUNC_get_func_arg => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_arg_proto } else{ NULL},
+        BPF_FUNC_get_func_ret => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_ret_proto } else{ NULL},
+        BPF_FUNC_get_func_arg_cnt => return if bpf_prog_has_trampoline(prog) { &bpf_get_func_arg_cnt_proto } else{ NULL},
+        BPF_FUNC_get_attach_cookie => return if bpf_prog_has_trampoline(prog) { &bpf_get_attach_cookie_proto_tracing } else{ NULL},
         _ => {
-            fn = raw_tp_prog_func_proto(func_id, prog);
-            if !fn && prog->expected_attach_type == BPF_TRACE_ITER
+            fnn = raw_tp_prog_func_proto(func_id, prog);
+            if !fnn && prog.expected_attach_type == BPF_TRACE_ITER
             {
-                fn = bpf_iter_get_func_proto(func_id, prog);
+                fnn = bpf_iter_get_func_proto(func_id, prog);
             }
-            return fn;
+            return fnn;
         }
 
     }
@@ -669,7 +660,8 @@ fn pe_prog_is_valid_access(
 }
 
 // 2184-2232
-fn pe_prog_convert_ctx_access(type: bpf_access_type, si: *mut bpf_insn, insn_buf: *mut bpf_insn, prog: *mut bpf_prog, target_size: *mut u32) -> u32 
+// type -> typee TODO:
+unsafe fn pe_prog_convert_ctx_access(typee: bpf_access_type, si: *mut bpf_insn, insn_buf: *mut bpf_insn, prog: *mut bpf_prog, target_size: *mut u32) -> u32 
 {
     let insn: *mut bpf_insn = insn_buf;
     match si.off
@@ -697,22 +689,35 @@ fn pe_prog_convert_ctx_access(type: bpf_access_type, si: *mut bpf_insn, insn_buf
     return insn - insn_buf;
 }
 
-let perf_event_verifier_ops: bpf_verifier_ops = bpf_verifier_ops 
+// TODO:
+static perf_event_verifier_ops: bpf_verifier_ops = bpf_verifier_ops 
 {
-    get_func_proto = pe_prog_func_proto,
-    is_valid_access = pe_prog_is_valid_access,
-    convert_ctx_access = pe_prog_convert_ctx_access
+    get_func_proto : pe_prog_func_proto,
+    is_valid_access : pe_prog_is_valid_access,
+    convert_ctx_access : pe_prog_convert_ctx_access,
+};
+
+
+// 定义 perf_event 程序操作
+const PERF_EVENT_PROG_OPS: bpf_prog_ops = bpf_prog_ops {
+    // 这里可以添加 perf_event 程序操作的字段和函数指针
+    // 例如:
+    // run: None,
+    // verify: None,
+    // fixup_attach_type: None,
+    // init: None,
+    // check_attach_type: None,
+    // is_tracing_prog: None,
+};
+
+// 定义 bpf_event_mutex 互斥锁
+lazy_static! {
+    static ref BPF_EVENT_MUTEX: Mutex<()> = Mutex::new(());
 }
 
+// 定义 BPF 跟踪程序的最大数量
+const BPF_TRACE_MAX_PROGS: usize = 64;
 
-// "
-// const struct bpf_prog_ops perf_event_prog_ops = {
-// };
-
-// static DEFINE_MUTEX(bpf_event_mutex);
-
-// #define BPF_TRACE_MAX_PROGS 64
-// "TODO:
 
 // 2233-2346
 // perf_event_attach_bpf_prog / perf_event_detach_bpf_prog / perf_event_query_prog_array函数的 Rust 实现
@@ -850,14 +855,14 @@ fn perf_event_query_prog_array(event: &perf_event, info: *mut c_void) -> i32 {
     };
 
     // 将程序数量和 ID 复制回用户空间
-    if copy_to_user(&mut (*uquery).prog_cnt, &prog_cnt, std::mem::size_of::<u32>()).is_err() ||
-        copy_to_user((*uquery).ids, ids, (ids_len * std::mem::size_of::<u32>()) as usize).is_err()
+    if copy_to_user(&mut unsafe{(*uquery).prog_cnt}, &prog_cnt, std::mem::size_of::<u32>()).is_err() ||
+        copy_to_user(unsafe{(*uquery).ids}, ids, (ids_len * std::mem::size_of::<u32>()) as usize).is_err()
     {
-        kfree(ids);
+        unsafe{kfree(ids)};
         return -EFAULT;
     }
 
-    kfree(ids);
+    unsafe{kfree(ids)};
     ret
 }
 
@@ -879,81 +884,129 @@ fn bpf_get_raw_tracepoint(name: *const c_char) -> *mut bpf_raw_event_map
         {
             return btp;
         }
-        btp = btp.offset(1);
+        btp = unsafe{btp.offset(1)};
     }
     return bpf_get_raw_tracepoint_module(name);
 }
 
 fn bpf_put_raw_tracepoint(btp: *mut bpf_raw_event_map) 
 {
-    let mod: *mut module;
+    let modd: *mut module;
     preempt_disable();
-    mod = __module_address(btp as c_ulong);
-    module_put(mod);
+    modd = __module_address(btp as c_ulong);
+    module_put(modd);
     preempt_enable();
 }
 
 fn __bpf_trace_run(prog: *mut bpf_prog, args: *mut c_ulong) 
 {
-'out' loop {
+'out: loop {
     cant_sleep();
     if (this_cpu_inc_return(*prog.active) != 1) 
     {
         bpf_prog_inc_misses_counter(prog);
-        break 'out';
+        break 'out;
     }
-    rcu_read_lock();
+    unsafe{rcu_read_lock()};
     bpf_prog_run(prog, args);
-    rcu_read_unlock();
+    unsafe{rcu_read_unlock()};
 }
     this_cpu_dec(*prog.active);
 }
 
 
-#define UNPACK(...)			__VA_ARGS__
-#define REPEAT_1(FN, DL, X, ...)	FN(X)
-#define REPEAT_2(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_1(FN, DL, __VA_ARGS__)
-#define REPEAT_3(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_2(FN, DL, __VA_ARGS__)
-#define REPEAT_4(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_3(FN, DL, __VA_ARGS__)
-#define REPEAT_5(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_4(FN, DL, __VA_ARGS__)
-#define REPEAT_6(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_5(FN, DL, __VA_ARGS__)
-#define REPEAT_7(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_6(FN, DL, __VA_ARGS__)
-#define REPEAT_8(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_7(FN, DL, __VA_ARGS__)
-#define REPEAT_9(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_8(FN, DL, __VA_ARGS__)
-#define REPEAT_10(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_9(FN, DL, __VA_ARGS__)
-#define REPEAT_11(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_10(FN, DL, __VA_ARGS__)
-#define REPEAT_12(FN, DL, X, ...)	FN(X) UNPACK DL REPEAT_11(FN, DL, __VA_ARGS__)
-#define REPEAT(X, FN, DL, ...)		REPEAT_##X(FN, DL, __VA_ARGS__)
+// 定义宏 UNPACK,用于展开可变参数
+macro_rules! UNPACK {
+    ($($x:tt)*) => ($($x)*);
+}
 
-#define SARG(X)		u64 arg##X
-#define COPY(X)		args[X] = arg##X
+// 定义宏 REPEAT_1 到 REPEAT_12,用于根据参数个数生成重复的代码
+macro_rules! REPEAT_1 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X));
+}
 
-#define __DL_COM	(,)
-#define __DL_SEM	(;)
+macro_rules! REPEAT_2 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_1!($FN, $DL, $($args)*)));
+}
 
-#define __SEQ_0_11	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+macro_rules! REPEAT_3 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_2!($FN, $DL, $($args)*)));
+}
 
-#define BPF_TRACE_DEFN_x(x)						\
-	void bpf_trace_run##x(struct bpf_prog *prog,			\
-			      REPEAT(x, SARG, __DL_COM, __SEQ_0_11))	\
-	{								\
-		u64 args[x];						\
-		REPEAT(x, COPY, __DL_SEM, __SEQ_0_11);			\
-		__bpf_trace_run(prog, args);				\
-	}								\
-	EXPORT_SYMBOL_GPL(bpf_trace_run##x)
-BPF_TRACE_DEFN_x(1);
-BPF_TRACE_DEFN_x(2);
-BPF_TRACE_DEFN_x(3);
-BPF_TRACE_DEFN_x(4);
-BPF_TRACE_DEFN_x(5);
-BPF_TRACE_DEFN_x(6);
-BPF_TRACE_DEFN_x(7);
-BPF_TRACE_DEFN_x(8);
-BPF_TRACE_DEFN_x(9);
-BPF_TRACE_DEFN_x(10);
-BPF_TRACE_DEFN_x(11);
-BPF_TRACE_DEFN_x(12);
+macro_rules! REPEAT_4 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_3!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_5 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_4!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_6 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_5!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_7 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_6!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_8 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_7!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_9 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_8!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_10 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_9!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_11 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_10!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT_12 {
+    ($FN:ident, $DL:tt, $X:tt, $($args:tt)*) => ($FN!($X) UNPACK!($DL REPEAT_11!($FN, $DL, $($args)*)));
+}
+
+macro_rules! REPEAT {
+    ($X:tt, $FN:ident, $DL:tt, $($args:tt)*) => (REPEAT_##$X!($FN, $DL, $($args)*));
+}
+
+// 定义宏 SARG 和 COPY,用于生成函数参数和参数复制代码
+macro_rules! SARG {
+    ($X:tt) => (arg##$X: u64);
+}
+
+macro_rules! COPY {
+    ($X:tt) => (args[$X] = arg##$X;);
+}
+
+// 定义宏 BPF_TRACE_DEFN_x,用于生成 bpf_trace_runX 函数
+macro_rules! BPF_TRACE_DEFN_x {
+    ($x:tt) => (
+        #[no_mangle]
+        pub extern "C" fn bpf_trace_run##$x(prog: *mut bpf_prog, REPEAT!($x, SARG, (,), 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)) {
+            let mut args = [0u64; $x];
+            REPEAT!($x, COPY, (;), 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+            unsafe { __bpf_trace_run(prog, &args); }
+        }
+    );
+}
+
+// 生成 bpf_trace_runX 函数
+bindings::BPF_TRACE_DEFN_x!(1);
+bindings::BPF_TRACE_DEFN_x!(2);
+bindings::BPF_TRACE_DEFN_x!(3);
+bindings::BPF_TRACE_DEFN_x!(4);
+bindings::BPF_TRACE_DEFN_x!(5);
+bindings::BPF_TRACE_DEFN_x!(6);
+bindings::BPF_TRACE_DEFN_x!(7);
+bindings::BPF_TRACE_DEFN_x!(8);
+bindings::BPF_TRACE_DEFN_x!(9);
+bindings::BPF_TRACE_DEFN_x!(10);
+bindings::BPF_TRACE_DEFN_x!(11);
+bindings::BPF_TRACE_DEFN_x!(12);
 
 // 2432-2577
 
@@ -994,29 +1047,30 @@ fn bpf_get_perf_event_info(event: *const perf_event, prog_id: *mut u32, fd_type:
     {
         return -EINVAL;
     }
-    if(prog,type == BPF_PROG_TYPE_PERF_EVENT)
+    // TODO:
+    if(prog.typee == BPF_PROG_TYPE_PERF_EVENT)
     {
         return -EOPNOTSUPP;
     }
-    *prog_id = prog.aux.id;
+    unsafe{*prog_id = prog.aux.id};
     flags = event.tp_event.flags;
     is_tracepoint = flags & TRACE_EVENT_FL_TRACEPOINT;
     is_syscall_tp = is_syscall_trace_event(event.tp_event);
 
     if(is_tracepoint || is_syscall_tp)
     {
-        *buf = if is_tracepoint { event.tp_event.tp.name } else { event.tp_event.name };
+        unsafe{*buf = if is_tracepoint { event.tp_event.tp.name } else { event.tp_event.name }};
         if(fd_type)
         {
-            *fd_type = BPF_FD_TYPE_TRACEPOINT;
+            unsafe{*fd_type = BPF_FD_TYPE_TRACEPOINT;}
         }
         if(probe_offset)
         {
-            *probe_offset = 0x0;
+            unsafe{*probe_offset = 0x0;}
         }
         if(probe_addr)
         {
-            *probe_addr = 0x0;
+            unsafe{*probe_addr = 0x0;}
         }
     }
     else
@@ -1025,12 +1079,13 @@ fn bpf_get_perf_event_info(event: *const perf_event, prog_id: *mut u32, fd_type:
         #[cfg(feature = CONFIG_KPROBE_EVENTS)]
         if(flags & TRACE_EVENT_FL_UPROBE)
         {
-            err = uprobe_perf_event_info(event, fd_type, buf, probe_offset, probe_addr, missed, event.attr,type == PERF_TYPE_TRACEPOINT);
+            // TODO:
+            err = uprobe_perf_event_info(event, fd_type, buf, probe_offset, probe_addr, missed, event.attr.typee == PERF_TYPE_TRACEPOINT);
         }
         #[cfg(feature = CONFIG_UPROBE_EVENTS)]
         if(flags & TRACE_EVENT_FL_UPROBE)
         {
-            err = bpf_get_uprobe_info(event, fd_type, buf, probe_offset, probe_addr, misevent.attr,type == PERF_TYPE_TRACEPOINTsed);
+            err = bpf_get_uprobe_info(event, fd_type, buf, probe_offset, probe_addr, misevent.attr.typee == PERF_TYPE_TRACEPOINTsed);
         }
     }
     return err;
@@ -1041,7 +1096,7 @@ fn send_signal_irq_work_init() -> i32
     let cpu: i32;
     let work: *mut send_signal_irq_work;
 
-    for_each_possible_cpu(cpu)
+    for_each_possible_cpu(cpu);
     {
         work = per_cpu_ptr(&send_signal_work, cpu);
         init_irq_work(&work.irq_work, do_bpf_send_signal);
@@ -1049,26 +1104,26 @@ fn send_signal_irq_work_init() -> i32
     return 0;
 }
 
-subsys_initcall(send_signal_irq_work_init);
+bindings::subsys_initcall!(send_signal_irq_work_init);
 
 #[cfg(feature = CONFIG_MODULES)]
 fn bpf_event_notify(nb: *mut notifier_block, op: c_ulong, module: *mut c_void) -> i32
 {
     let btm: *mut bpf_trace_module;
     let tmp: *mut bpf_trace_module;
-    let mod: *mut module = module;
+    let modd: *mut module = module;
     let ret: i32 = 0;
-
-'out':loop{
-    if(mod.num_bpf_raw_events == 0 || (op != MODULE_STATE_COMING && op != MODULE_STATE_GOING))
+// mod -> modd
+'out :loop{
+    if(modd.num_bpf_raw_events == 0 || (op != MODULE_STATE_COMING && op != MODULE_STATE_GOING))
     {
-        break 'out';
+        break 'out;
     }
     let _lock: MutexGuard<'_, ()> = bpf_module_mutex.lock.unwrap();
     match op
     {
         MODULE_STATE_COMING => {
-            btm = kzalloc(mem::size_of::<bpf_trace_module>(), GFP_KERNEL);
+            unsafe{btm = kzalloc(mem::size_of::<bpf_trace_module>(), GFP_KERNEL);}
             if(btm)
             {
                 btm.module = module;
@@ -1080,12 +1135,12 @@ fn bpf_event_notify(nb: *mut notifier_block, op: c_ulong, module: *mut c_void) -
             }
         }
         MODULE_STATE_GOING => {
-            list_for_each_entry_safe(btm, tmp, &bpf_trace_modules, list)
+            list_for_each_entry_safe(btm, tmp, &bpf_trace_modules, list);
             {
                 if(btm.module == module)
                 {
                     list_del(&btm.list);
-                    kfree(btm);
+                    unsafe{kfree(btm);}
                     break;
                 }
             }
@@ -1097,9 +1152,9 @@ fn bpf_event_notify(nb: *mut notifier_block, op: c_ulong, module: *mut c_void) -
 
 }
 
-let bpf_module_nb: notifier_block = notifier_block
+static bpf_module_nb: notifier_block = notifier_block
 {
-    .notifier_call = bpf_event_notify,
+    notifier_call : bpf_event_notify,
 };
 
 fn bpf_module_init() -> i32
@@ -1108,7 +1163,8 @@ fn bpf_module_init() -> i32
     return 0;
 }
 
-fs_initcall(bpf_event_init);
+// TODO:
+fs_initcall!(bpf_event_init);
 
 // 2578-2602
 
@@ -1223,10 +1279,10 @@ fn bpf_kprobe_multi_link_dealloc(link: *mut bpf_link) {
     kvfree(kmulti_link.cookies);
 
     // 释放 kmulti_link.mods 指向的内存
-    kfree(kmulti_link.mods);
+    unsafe{kfree(kmulti_link.mods);}
 
     // 释放 kmulti_link 本身的内存
-    kfree(kmulti_link as *mut bpf_kprobe_multi_link as *mut c_void);
+    unsafe{kfree(kmulti_link as *mut bpf_kprobe_multi_link as *mut c_void);}
 }
 
 fn bpf_kprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_info) -> i32 {
@@ -1265,10 +1321,12 @@ fn bpf_kprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_inf
             return -EFAULT;
         }
     } else {
+        unsafe{
         // 如果当前进程没有权限查看符号值,则将用户空间的地址数组填充为 0
-        for i in 0..ucount {
-            if put_user(0, uaddrs.offset(i as isize)).is_err() {
-                return -EFAULT;
+            for i in 0..ucount {
+                if put_user(0, uaddrs.offset(i as isize)).is_err() {
+                    return -EFAULT;
+                }
             }
         }
     }
@@ -1387,68 +1445,70 @@ fn bpf_kprobe_multi_cookie(ctx: *mut bpf_run_ctx) -> u64 {
 // 2770-2843
 fn bpf_kprobe_multi_entry_ip(ctx: *mut bpf_run_ctx) -> u64
 {
-    let run_ctx: *mut bpf_kprobe_multi_run_ctx = container_of((*ctx).bpf_ctx, bpf_kprobe_multi_run_ctx, run_ctx);
-    return (*run_ctx).entry_ip;
+    unsafe{let run_ctx: *mut bpf_kprobe_multi_run_ctx = container_of((*ctx).bpf_ctx, bpf_kprobe_multi_run_ctx, run_ctx);
+    return (*run_ctx).entry_ip;}
 }
 
 fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulong, regs: *mut pt_regs) -> i32
 {
-    let run_ctx: bpf_kprobe_multi_run_ctx = {
-        .link = link,
-        .entry_ip = entry_ip,
+    let run_ctx: bpf_kprobe_multi_run_ctx = bpf_kprobe_multi_run_ctx{
+        link : link,
+        entry_ip : entry_ip,
     };
     let old_run_ctx: *mut bpf_run_ctx;
     let err: i32;
 
-'out' : loop {
+'out : loop {
     if((__this_cpu_inc_return(bpf_prog_active) != 1))
     {
-        bpf_prog_inc_misses_counter((*link).link.prog);
+        unsafe{bpf_prog_inc_misses_counter((*link).link.prog);}
         err = 0;
-        break 'out';
+        break 'out;
     }
 
-    migrate_disable();
+    unsafe 
+    {migrate_disable();
     rcu_read_lock();
     old_run_ctx = bpf_set_run_ctx(&run_ctx.run_ctx);
     err = bpf_prog_run((*link).link.prog, regs);
     bpf_reset_run_ctx(old_run_ctx);
     rcu_read_unlock();
-    migrate_enable();
+    migrate_enable();}
 }
     
     __this_cpu_dec(bpf_prog_active);
     return err;
 }
 
-static int
-kprobe_multi_link_prog_run(struct bpf_kprobe_multi_link *link,
-			   unsigned long entry_ip, struct pt_regs *regs)
+fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulong, regs: *mut pt_regs) -> i32
 {
-	struct bpf_kprobe_multi_run_ctx run_ctx = {
-		.link = link,
-		.entry_ip = entry_ip,
-	};
-	struct bpf_run_ctx *old_run_ctx;
-	int err;
+'out: loop   {
+    let run_ctx: bpf_kprobe_multi_run_ctx = bpf_kprobe_multi_run_ctx{
+        link : link,
+        entry_ip : entry_ip,
+    };
+    let old_run_ctx: *mut bpf_run_ctx;
+    let err: i32;
 
-	if (unlikely(__this_cpu_inc_return(bpf_prog_active) != 1)) {
-		bpf_prog_inc_misses_counter(link->link.prog);
-		err = 0;
-		goto out;
-	}
+    if(__this_cpu_inc_return(bpf_prog_active) != 1)
+    {
+        unsafe{bpf_prog_inc_misses_counter((*link).link.prog);}
+        err = 0;
+        break 'out;
+    }
+    unsafe{
+        migrate_disable();
+        rcu_read_lock();
+        old_run_ctx = bpf_set_run_ctx(&run_ctx.run_ctx);
+        err = bpf_prog_run((*link).link.prog, regs);
+        bpf_reset_run_ctx(old_run_ctx);
+        rcu_read_unlock();
+        migrate_enable();
+    }
+}
+    __this_cpu_dec(bpf_prog_active);
+    return err;
 
-	migrate_disable();
-	rcu_read_lock();
-	old_run_ctx = bpf_set_run_ctx(&run_ctx.run_ctx);
-	err = bpf_prog_run(link->link.prog, regs);
-	bpf_reset_run_ctx(old_run_ctx);
-	rcu_read_unlock();
-	migrate_enable();
-
- out:
-	__this_cpu_dec(bpf_prog_active);
-	return err;
 }
 
 fn kprobe_multi_link_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulong, regs: *mut pt_regs, data: *mut c_void) -> i32
@@ -1468,12 +1528,13 @@ fn kprobe_multi_link_exit_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c
     kprobe_multi_link_prog_run(link, get_entry_ip(fentry_ip), regs);
 }
 
-fn symbols_cmp_r(a: *const *const c_char, b: *const *const c_char, priv: *const c_void) -> i32
+// priv -> privv
+fn symbols_cmp_r(a: *const *const c_char, b: *const *const c_char, privv: *const c_void) -> i32
 {
     let str_a: *const *const c_char = a;
     let str_b: *const *const c_char = b;
 
-    return strcmp(*str_a, *str_b);
+    unsafe{return strcmp(*str_a, *str_b);}
 }
 
 struct multi_symbols_sort
@@ -1516,8 +1577,9 @@ struct modules_array
     mods_cap: i32
 }
 
-fn add_module(arr: *mut modules_array, mod: *mut module) -> i32
+fn add_module(arr: *mut modules_array, modd: *mut module) -> i32
 {
+    unsafe{
     let mods: *mut *mut module;
     if (*arr).mods_cnt == (*arr).mods_cap
     {
@@ -1529,9 +1591,9 @@ fn add_module(arr: *mut modules_array, mod: *mut module) -> i32
         }
         (*arr).mods = mods;
     }
-    (*arr).mods[(*arr).mods_cnt as usize] = mod;
+    (*arr).mods[(*arr).mods_cnt as usize] = modd;
     (*arr).mods_cnt += 1;
-    return 0;
+    return 0;}
 }
 
 // 2884-2894
@@ -1550,7 +1612,8 @@ fn has_module(arr: &modules_array, module: &module) -> bool {
 
 // 2895-2933
 // get_modules_for_addrs 函数的 Rust 实现
-fn get_modules_for_addrs(addrs: &[u64]) -> Result<Vec<&module>, i32> {
+// TODO:
+fn get_modules_for_addrs(mods: *mut *mut *mut module , addrs: &[u64], cnt: i32) -> Result<Vec<&module>, i32> {
     let mut arr = modules_array::default();
     let mut err = 0;
 
@@ -1681,19 +1744,19 @@ fn bpf_kprobe_multi_link_attach(attr: &bpf_attr, prog: &mut bpf_prog) -> Result<
         sort_r(us.syms.as_mut_ptr(), cnt, std::mem::size_of::<ksym>(), symbols_cmp_r, symbols_swap_r, &mut data);
 
         if ftrace_lookup_symbols(us.syms.as_mut_ptr(), cnt, addrs).is_err() {
-            free_user_syms(&us);
+            free_user_syms(&us as *mut user_syms);
             return Err(-EINVAL);
         }
-        free_user_syms(&us);
+        free_user_syms(&us as *mut user_syms);
     }
 
     // 如果程序启用了 kprobe 覆盖,则检查地址是否在错误注入列表中
-    if prog.kprobe_override && addrs_check_error_injection_list(addrs, cnt).is_err() {
+    if prog.kprobe_override && addrs_check_error_injection_list(addrs,  ).is_err() {
         return Err(-EINVAL);
     }
 
     // 分配并初始化 bpf_kprobe_multi_link 结构体
-    let link = kzalloc(std::mem::size_of::<bpf_kprobe_multi_link>(), GFP_KERNEL)?;
+    unsafe{let link = kzalloc(std::mem::size_of::<bpf_kprobe_multi_link>(), GFP_KERNEL)?;}
     bpf_link_init(&mut link.link, BPF_LINK_TYPE_KPROBE_MULTI, &bpf_kprobe_multi_link_lops, prog);
 
     // 准备 link 结构体
@@ -1744,7 +1807,7 @@ fn bpf_kprobe_multi_link_attach(attr: &bpf_attr, prog: &mut bpf_prog) -> Result<
 
 #[cfg(not(feature = CONFIG_FPROBE))]
 
-fn bpf_kprobe_multi_link_attach(attr: *union bpf_attr, prog: *mut bpf_prog) -> i32 
+fn bpf_kprobe_multi_link_attach(attr: *mut bpf_attr, prog: *mut bpf_prog) -> i32 
 {
     return -EOPNOTSUPP;
 }
@@ -1801,20 +1864,20 @@ fn bpf_uprobe_unregister(path: *mut path, uprobes: *mut bpf_uprobe, cnt: u32)
 
 fn bpf_uprobe_multi_link_release(link: *mut bpf_link)
 {
-    let umulti_link: *mut bpf_uprobe_multi_link = container_of(link, struct bpf_uprobe_multi_link, link);
+    let umulti_link: *mut bpf_uprobe_multi_link = container_of(link,  bpf_uprobe_multi_link, link);
     bpf_uprobe_unregister(&umulti_link.path, umulti_link.uprobes, umulti_link.cnt);
 }
 
 fn bpf_uprobe_multi_link_dealloc(link: *mut bpf_link)
 {
-    let umulti_link: *mut bpf_uprobe_multi_link = container_of(link, struct bpf_uprobe_multi_link, link);
+    let umulti_link: *mut bpf_uprobe_multi_link = container_of(link,  bpf_uprobe_multi_link, link);
     if umulti_link.task != 0
     {
         put_task_struct(umulti_link.task);
     }
     path_put(&umulti_link.path);
     kvfree(umulti_link.uprobes);
-    kfree(umulti_link);
+    unsafe{kfree(umulti_link);}
 }
 
 // 3159-3227
@@ -1854,13 +1917,13 @@ fn bpf_uprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_inf
         let buf = kmalloc(upath_size as usize, GFP_KERNEL)?;
         let p = d_path(&umulti_link.path, buf, upath_size as usize);
         if p.is_err() {
-            kfree(buf);
+            unsafe{kfree(buf);}
             return Err(p.unwrap_err());
         }
         let p = p.unwrap();
         upath_size = (buf.as_ptr() as usize + upath_size as usize - p.as_ptr() as usize) as u32;
         let left = unsafe { copy_to_user(upath, p.as_ptr(), upath_size as usize) };
-        kfree(buf);
+        unsafe{kfree(buf);}
         if left != 0 {
             return Err(-EFAULT);
         }
@@ -1914,20 +1977,20 @@ lazy_static!
     });
 }
 
-fn uprobe_prog_run(*mut uprobe: *mut bpf_uprobe,
+fn uprobe_prog_run( uprobe: *mut bpf_uprobe,
                     entry_ip: c_ulong,
-                   *mut regs: *mut pt_regs) -> i32
+                    regs: *mut pt_regs) -> i32
 {
-    let mut link: *mut bpf_uprobe_multi_link = (*uprobe).link;
+    unsafe{let mut link: *mut bpf_uprobe_multi_link = (*uprobe).link;}
     let mut run_ctx:  bpf_uprobe_multi_run_ctx = bpf_uprobe_multi_run_ctx
-    {
+    { 
         entry_ip: entry_ip,
         uprobe: uprobe,
     };
     let mut prog: *mut bpf_prog = link.link.prog;
     let mut sleepable: bool = prog.aux.sleepable;
     let mut old_run_ctx:Box<bpf_run_ctx> = Box::new(bpf_run_ctx::new());
-    let mux err: i32 = 0;
+    let mut err: i32 = 0;
 
     if(link.task && current != link.task)
     {
@@ -1939,7 +2002,7 @@ fn uprobe_prog_run(*mut uprobe: *mut bpf_uprobe,
     }
     else
     {
-        rcu_read_lock();
+        unsafe{rcu_read_lock();}
     }
     migrate_disable();
 
@@ -1955,12 +2018,12 @@ fn uprobe_prog_run(*mut uprobe: *mut bpf_uprobe,
     }
     else
     {
-        rcu_read_unlock();
+        unsafe{rcu_read_unlock();}
     }
     return err;
 }
 
-fn uprobe_multi_link_filter(con: *mut uprobe_consumer, ctx: enum uprobe_filter_ctx, mm: *mut mm_struct) -> bool
+fn uprobe_multi_link_filter(con: *mut uprobe_consumer, ctx:  uprobe_filter_ctx, mm: *mut mm_struct) -> bool
 {
     let mut uprobe: Box<bpf_uprobe> = Box::new(bpf_uprobe::new());
     uprobe = container_of(con, bpf_uprobe, consumer);
@@ -2017,26 +2080,26 @@ extern "C" {
 fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32 
 {
     let mut link: Box<bpf_uprobe_multi_link> = Box::new(bpf_uprobe_multi_link::new());
-    let mut uref_ctr_offsets = *mut c_ulong = std::ptr::null_mut();
+    let mut uref_ctr_offsets :*mut c_ulong = std::ptr::null_mut();
     let link_primer = bpf_link_primer
     {
         my_field_null: None,
     };
     let mut uprobes: Box<bpf_uprobe> = Box::new(bpf_uprobe::new());
     let mut task: Box<task_struct> = Box::new(task_struct::new());
-    let mut uoffsets = *mut c_ulong = std::ptr::null_mut();
-    let mut ucookies = *mut u64 = std::ptr::null_mut();
+    let mut uoffsets : *mut c_ulong = std::ptr::null_mut();
+    let mut ucookies : *mut u64 = std::ptr::null_mut();
     let mut upath = std::ptr::void = std::ptr::null_mut();
     let mut flags:u32 = 0;
     let mut cint :u32 = 0;
     let mut i    :u32 = 0;
     let mut path = path::new();
-    let mut name = *mut c_char = std::ptr::null_mut();
+    let mut name : *mut c_char = std::ptr::null_mut();
     let mut pid:pid_t;
     let mut err:i32;
     let mut signal:i32 = 0;
 
-'error_dealing':loop{
+'error_dealing :loop{
     // 3331-3340
     if(mem::sizeof::<u64>() != mem::size_of::<*const std::ffi::c_void>())
     {
@@ -2053,8 +2116,8 @@ fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32
     }
 
     // 3346-3388
-    upath = u64_to_user_ptr(attr.link_create.uprobe_multi.path);
-    uoffsets = u64_to_user_ptr(attr.link_create.uprobe_multi.offsets);
+    unsafe{upath = u64_to_user_ptr(attr.link_create.uprobe_multi.path);
+    uoffsets = u64_to_user_ptr(attr.link_create.uprobe_multi.offsets);}
     cnt = attr.link_create.uprobe_multi.cnt;
 
     if(!upath || !uoffsets || !cnt)
@@ -2065,7 +2128,7 @@ fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32
     {
         return -E2BIG;
     }
-    uref_ctr_offsets = u64_to_user_ptr(attr.link_create.uprobe_multi.ref_ctr_offsets);
+    unsafe{uref_ctr_offsets = u64_to_user_ptr(attr.link_create.uprobe_multi.ref_ctr_offsets);
     ucookies = u64_to_user_ptr(attr.link_create.uprobe_multi.cookies);
 
     name = strndup_user(upath, PATH_MAX);
@@ -2075,70 +2138,70 @@ fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32
         return err;
     }
 
-    err = kern_path(name, LOOKUP_FOLLOW, *mut path:*mut path);
-    kfree(name);
+    unsafe{err = kern_path(name, LOOKUP_FOLLOW, path);}
+    kfree(name);}
     if(err)
     {
         return err;
     }
-    if(!d_is_reg(path.dentry))
+    if(unsafe{!d_is_reg(path.dentry)})
     {
         err = -EBADF;
         signal = 1;
         // goto error_path_put;
-        break 'error_dealing';
+        break 'error_dealing;
     }
     pid = attr.link_create.uprobe_multi.pid;
     if(pid)
     {
-        rcu_read_lock();
+        unsafe{rcu_read_lock();
         task = get_pid_task(find_vpid(pid), PIDTYPE_PID);
-        rcu_read_unlock();
+        rcu_read_unlock();}
         if(!task)
         {
             err = -ESRCH;
             signal = 1;
             // goto error_path_put;
-            break 'error_dealing';
+            break 'error_dealing;
         }
     }
     err = -ENOMEM;
-    link = kzalloc(mem::size_of::<*const link>(), GFP_KERNEL);
-    uprobes = kvcalloc(cnt, mem::size_of::<*const uprobes>(), GFP_KERNEL);
+    unsafe{link = kzalloc(mem::size_of::<*const link>(), GFP_KERNEL);
+    uprobes = kvcalloc(cnt, mem::size_of::<*const uprobes>(), GFP_KERNEL);}
 
     // 3390-3420
     if(!uprobes || !link)
     {
         signal = 2;
         // goto error_free;
-        break 'error_dealing';
+        break 'error_dealing;
     }
-    for (i = 0; i < cnt; i++)
+    for i in 0..cnt
     {
         if(__get_user(uprobes[i].offset, uoffsets + i))
         {
             err = -EFAULT;
             signal = 2;
             // goto error_free;
-            break 'error_dealing';
+            break 'error_dealing;
         }
         if (uprobes[i].offset < 0) {
 			err = -EINVAL;
 			signal = 2;
             // goto error_free;
-            break 'error_dealing';
+            break 'error_dealing;
 		}
         if (uref_ctr_offsets && __get_user(uprobes[i].ref_ctr_offset, uref_ctr_offsets + i)) {
 			err = -EFAULT;
 			signal = 2;
             // goto error_free;
-            break 'error_dealing';
+            break 'error_dealing;
 		}
 		if (ucookies && __get_user(uprobes[i].cookie, ucookies + i)) {
 			err = -EFAULT;
 			signal = 2;
             // goto error_free;
-            break 'error_dealing';
+            break 'error_dealing;
 		}
         uprobes[i].link = link;
         if(flags & BPF_UPROBE_MULTI_FLAG_PRIME)
@@ -2163,26 +2226,26 @@ fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32
     link.task = task;
     link.flags = flags;
 
-    bpf_link_init(*mut link.link:*mut link, BPF_TRACE_UPROBE_MULTI, &bpf_uprobe_multi_link_lops, prog);
-    for (i = 0; i < cnt; i++)
+    unsafe{bpf_link_init(link.link, BPF_TRACE_UPROBE_MULTI, &bpf_uprobe_multi_link_lops, prog);}
+    for i in 0..cnt
     {
-        err = uprobe_register_refctr(d_real_inode(link.path.dentry), uprobes[i].offset, uprobes[i].ref_ctr_offset, *mut uprobes[i].consumer);
+        err = uprobe_register_refctr(d_real_inode(link.path.dentry), uprobes[i].offset, uprobes[i].ref_ctr_offset,  uprobes[i].consumer);
         if(err)
         {
-            bpf_uprobe_unregister(*mut path: *mut path, uprobes, i);
+            bpf_uprobe_unregister( path, uprobes, i);
             signal = 2;
             // goto error_free;
-            break 'error_dealing';
+            break 'error_dealing;
         }
     }
-    err = bpf_link_prime(*mut link.link: *mut link, *mut link_primer);
+    err = bpf_link_prime(link.link, link_primer);
     if(err)
     {
         signal = 2;
         // goto error_free;
-        break 'error_dealing';
+        break 'error_dealing;
     }
-    return bpf_link_settle(*mut link_primer);
+    return bpf_link_settle(& link_primer);
 
 }
     //3448-3456
@@ -2191,7 +2254,7 @@ fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32
         if(signal == 2)
         {
             kvfree(uprobes);
-            kfree(link);
+            unsafe{kfree(link);}
             if(task)
             {
                 put_task_struct(task);
