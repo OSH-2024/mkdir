@@ -4,26 +4,58 @@ use std::ptr;
 use libc::{c_char, size_t, strncpy};
 use std::ffi::c_void;
 use std::ptr::NonNull;
-use core::ffi::c_void;
 use std::io::{self, Write};
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{ c_int, c_uint};
 use core::cell::UnsafeCell;
-use std::os::raw::{c_void};
-use kernel::THIS_MODULE;
-use kernel::prelude::*;
+// use kernel::THIS_MODULE;
+// use kernel::prelude::*;
+
+
+struct bpf_func_proto {
+    func: extern "C" fn(*mut u32,...) -> u32, // 函数指针，接受一个可变参数列表，返回u32 // 函数指针，接受一个可变参数列表，返回u32
+    ret_type: u32,                      // 返回类型
+    gpl_only: bool,
+    arg1_type: u32,                     // 第一个参数的类型
+    arg2_type: u32,                     // 第二个参数的类型
+    arg3_type: u32,                     // 第三个参数的类型
+    arg4_type: u32,                     // 第四个参数的类型
+    arg5_type: u32,                     // 第五个参数的类型
+    arg1_btf_id : *const i32,           // 第一个参数的BTF ID
+    ret_btf_id: *const i32,             // 返回值的BTF ID
+    // 根据需要添加更多字段
+}
+struct bpf_bprintf_data {
+    buffer: Vec<u8>,
+    size: usize,
+    capacity: usize,
+    get_bin_args:bool,
+}
+#[repr(C)]
+struct perf_sample_data {
+    addr: u64,
+    period: u64,
+    context: Context,
+    // 其他性能数据字段...
+}
+
+#[repr(C)]
+struct Context {
+    pid: u32,
+    tid: u32,
+}
 //48-83
 
 
 // Rust版本的`BpfTraceModule`结构体
-struct BpfTraceModule {
-    module: *mut Module,
-    // Rust中不需要显式地声明链表节点，因为`LinkedList`已经处理了
-}
+// struct BpfTraceModule {
+//     module: *mut Module,
+//     // Rust中不需要显式地声明链表节点，因为`LinkedList`已经处理了
+// }
 
-// Rust版本的全局变量和互斥锁
-lazy_static! {
-    static ref BPF_TRACE_MODULES: Mutex<LinkedList<BpfTraceModule>> = Mutex::new(LinkedList::new());
-}
+// // Rust版本的全局变量和互斥锁
+// lazy_static! {
+//     static ref BPF_TRACE_MODULES: Mutex<LinkedList<BpfTraceModule>> = Mutex::new(LinkedList::new());
+// }
 
 // Rust版本的`bpf_get_raw_tracepoint_module`函数
 fn bpf_get_raw_tracepoint_module(name: &str) -> Option<*mut BpfRawEventMap> {
@@ -56,7 +88,6 @@ extern "C" {
     fn bpf_get_stackid(r1: u64, r2: u64, r3: u64, r4: u64, r5: u64) -> u64;
     fn bpf_get_stack(r1: u64, r2: u64, r3: u64, r4: u64, r5: u64) -> u64;
 
-    fn bpf_btf_printf_prepare(ptr: *mut BtfPtr, btf_ptr_size: u32, flags: u64, btf: *const *const Btf, btf_id: *mut i32) -> i32;
     fn bpf_kprobe_multi_cookie(ctx: BpfRunCtx) -> u64;
     fn bpf_kprobe_multi_entry_ip(ctx: BpfRunCtx) -> u64;
 
@@ -129,12 +160,17 @@ unsafe fn bpf_override_return(regs: *mut pt_regs, rc: u64) -> i32 {
     0
 }
 
-let bpf_override_return_proto: bpf_func_proto = {
-    .func		= bpf_override_return,
-    .gpl_only	= true,
-    .ret_type	= RET_INTEGER,
-    .arg1_type	= ARG_PTR_TO_CTX,
-    .arg2_type	= ARG_ANYTHING,
+static bpf_override_return_proto:bpf_func_proto = bpf_func_proto{
+    func		: bpf_override_return,
+    gpl_only	: true,
+    ret_type	: RET_INTEGER,
+    arg1_type	: ARG_PTR_TO_CTX,
+    arg2_type	: ARG_ANYTHING,
+    arg3_type: 0,
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //174-190
 #[inline(always)]
@@ -168,13 +204,18 @@ macro_rules! BPF_CALL_3 {
 // 使用 BPF_CALL_3 宏定义 bpf_probe_read_user 函数
 BPF_CALL_3!(bpf_probe_read_user, *mut u8, u32, *const u8);
 //191-199
-let bpf_probe_read_user_proto = BpfFuncProto {
+static bpf_probe_read_user_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_probe_read_user, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
     arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
     arg3_type: ArgType::ARG_ANYTHING,
+
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //200-220
 
@@ -194,17 +235,18 @@ fn bpf_probe_read_user_str_common(dst: &mut [u8], unsafe_ptr: *const c_char, siz
     unsafe {
         // 尝试复制字符串
         ret = strncpy_from_user_nofault(dst, unsafe_ptr, size);
-    }
+    
 
-    if ret < 0 {
-        // 如果复制失败，返回错误
-        #[cold]
-        // // 清空目标缓冲区
-        // ptr::write_bytes(dst.as_mut_ptr(), 0, dst.len());
-        //清空dst对应的缓冲区
-        ptr::write_bytes(dst.as_mut_ptr(), 0, dst.len());
+        if ret < 0 {
+            // 如果复制失败，返回错误
+            #[cold]
+            // // 清空目标缓冲区
+            // ptr::write_bytes(dst.as_mut_ptr(), 0, dst.len());
+            //清空dst对应的缓冲区
+            ptr::write_bytes(dst.as_mut_ptr(), 0, dst.len());
 
-        println!("Error: {}", ret); //测试代码
+            println!("Error: {}", ret); //测试代码
+        }
     }
 
     return ret;
@@ -217,25 +259,35 @@ fn bpf_probe_read_user_str(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_v
         ret
     }
 }
-let bpf_probe_read_user_str_proto = BpfFuncProto {
+static bpf_probe_read_user_str_proto : bpf_func_proto = bpf_func_proto {
     func: bpf_probe_read_user_str, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
     arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
     arg3_type: ArgType::ARG_ANYTHING,
+
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 fn bpf_probe_read_kernel(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_void>) -> i32{
     let ret = bpf_probe_read_kernel_common(dst.as_ptr(), size, unsafe_ptr.as_ptr());
     ret
 }
-let bpf_probe_read_kernel_proto = BpfFuncProto {
+static bpf_probe_read_kernel_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_probe_read_kernel, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
     arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
     arg3_type: ArgType::ARG_ANYTHING,
+
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 // 252-277
 #[inline(always)]
@@ -282,62 +334,96 @@ macro_rules! BPF_CALL_3 {
 BPF_CALL_3!(bpf_probe_read_kernel_str, *mut u8, u32, *const u8);
 
 //278-285
-let bpf_probe_read_kernel_str_proto = BpfFuncProto {
+static bpf_probe_read_kernel_str_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_probe_read_kernel_str, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
     arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
     arg3_type: ArgType::ARG_ANYTHING,
+
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //286-326
 
 
 #[cfg(feature = CONFIG_ARCH_HAS_NON_OVERLAPPING_ADDRESS_SPACE)]
-BPF_CALL_3(bpf_probe_read_compat, *mut c_void, dst, u32, size, *const c_void, unsafe_ptr) 
-{
-    if unsafe_ptr as usize < TASK_SIZE {
-        bpf_probe_read_user_common(dst, size, unsafe_ptr as *const _)
-    } 
-    else 
-    {
-        bpf_probe_read_kernel_common(dst, size, unsafe_ptr)
+// BPF_CALL_3(bpf_probe_read_compat, *mut c_void, dst, u32, size, *const c_void, unsafe_ptr) 
+// {
+//     if unsafe_ptr as usize < TASK_SIZE {
+//         bpf_probe_read_user_common(dst, size, unsafe_ptr as *const _)
+//     } 
+//     else 
+//     {
+//         bpf_probe_read_kernel_common(dst, size, unsafe_ptr)
+//     }
+// }
+
+unsafe fn bpf_probe_read_compat(dst:*mut c_void, size:u32 , unsafe_ptr:*const c_void)->i32{
+    if unsafe_ptr  < TASK_SIZE{
+        bpf_probe_read_user_common(dst,size,unsafe_ptr as *const _)
+    }
+    else{
+        bpf_probe_read_kernel_common(dst,size,unsafe_ptr)
     }
 }
 
 
-let bpf_probe_read_compat_proto:bpf_func_proto={
-    .func=bpf_probe_read_compat,
-    .gpl_only=true,
-    .ret_type=RET_INTEGER,
-    .arg1_type=ARG_PTR_TO_UNINIT_MEM,
-    .arg2_type=ARG_CONST_SIZE_OR_ZERO,
-    .arg3_type=ARG_ANYTHING,
+static bpf_probe_read_compat_proto:bpf_func_proto=bpf_func_proto{
+    func:bpf_probe_read_compat,
+    gpl_only:true,
+    ret_type:RET_INTEGER,
+    arg1_type:ARG_PTR_TO_UNINIT_MEM,
+    arg2_type:ARG_CONST_SIZE_OR_ZERO,
+    arg3_type:ARG_ANYTHING,
+
+    arg4_type:0,
+    arg5_type:0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 
-BPF_CALL_3(bpf_probe_read_compat_str, *mut c_void, dst, u32, size, *mut c_void, unsafe_ptr)
-{
-    if (unsafe_ptr as usize< TASK_SIZE) 
-    {
-        return bpf_probe_read_user_str_common(dst, size, unsafe_ptr as *mut c_void);
+// BPF_CALL_3(bpf_probe_read_compat_str, *mut c_void, dst, u32, size, *mut c_void, unsafe_ptr)
+// {
+//     if (unsafe_ptr as usize< TASK_SIZE) 
+//     {
+//         return bpf_probe_read_user_str_common(dst, size, unsafe_ptr as *mut c_void);
+//     }
+//     return bpf_probe_read_kernel_str_common(dst, size, unsafe_ptr);
+// }
+
+static TASK_SIZE:u32 =16;
+unsafe fn bpf_probe_read_compat_str(dst:*mut c_void,size:u32,unsafe_ptr:*mut c_void)->i32{
+    if (unsafe_ptr  < TASK_SIZE) {
+        bpf_probe_read_user_str_common(dst,size,unsafe_ptr as *mut c_void)
     }
-    return bpf_probe_read_kernel_str_common(dst, size, unsafe_ptr);
+    else{
+        bpf_probe_read_kernel_str_common(dst,size,unsafe_ptr)
+    }
 }
-let bpf_probe_read_compat_str_proto: bpf_func_proto=
+static bpf_probe_read_compat_str_proto: bpf_func_proto=bpf_func_proto
 {
-    .func=bpf_probe_read_compat_str,
-    .gpl_only=true,
-    .ret_type=RET_INTEGER,
-    .arg1_type=ARG_PTR_TO_UNINIT_MEM,
-    .arg2_type=ARG_CONST_SIZE_OR_ZERO,
-    .arg3_type=ARG_ANYTHING,
+    func:bpf_probe_read_compat_str,
+    gpl_only:true,
+    ret_type:RET_INTEGER,
+    arg1_type:ARG_PTR_TO_UNINIT_MEM,
+    arg2_type:ARG_CONST_SIZE_OR_ZERO,
+    arg3_type:ARG_ANYTHING,
+
+    arg4_type:0,
+    arg5_type:0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //327-359
 
 fn bpf_probe_write_user(unsafe_ptr:NonNull<c_void>,src:NonNull<c_void>,size:u32)->i32{
     unsafe{
         let in_interrupt_var = in_interrupt() as bool;
-        let unlikely_var = unlikely(in_interrupt_var||current->flags & (PF_KTHREAD | PF_EXITING)) as bool;
+        let unlikely_var = unlikely(in_interrupt_var||current.flags & (PF_KTHREAD | PF_EXITING)) as bool;
         if unlikely_var{
             return -EPERM;
         }
@@ -350,13 +436,18 @@ fn bpf_probe_write_user(unsafe_ptr:NonNull<c_void>,src:NonNull<c_void>,size:u32)
     }
     copy_to_user_nofault_var
 }
-let bpf_probe_write_user_proto = BpfFuncProto {
+static bpf_probe_write_user_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_probe_write_user, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_ANYTHING,
     arg2_type: ArgType::ARG_PTR_TO_MEM | MEM_RDONLY,
     arg3_type: ArgType::ARG_CONST_SIZE,
+    
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //361-371
 // bpf_get_probe_write_proto 函数的 Rust 实现
@@ -498,7 +589,9 @@ struct BpfBprintfData {
 // }
 
 // Rust版本的bpf_trace_vprintk函数
-fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len: u32) -> i32 {
+
+
+unsafe fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len: u32) -> i32 {
     let mut data = BpfBprintfData {
         get_bin_args: true,
         get_buf: true,
@@ -583,7 +676,7 @@ enum ArgType {
 }
 
 // BPF函数实现
-static BPF_TRACE_VPRINTK_PROTO: BpfFuncProto = BpfFuncProto {
+static BPF_TRACE_VPRINTK_PROTO: bpf_func_proto = bpf_func_proto {
     func: bpf_trace_vprintk as unsafe extern "C" fn(),
     gpl_only: true,
     ret_type: ReturnType::Integer,
@@ -591,6 +684,10 @@ static BPF_TRACE_VPRINTK_PROTO: BpfFuncProto = BpfFuncProto {
     arg2_type: ArgType::ConstSize,
     arg3_type: ArgType::PtrToMemMaybeNullReadOnly,
     arg4_type: ArgType::ConstSizeOrZero,
+
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 
 unsafe extern "C" fn bpf_trace_vprintk() {
@@ -605,9 +702,12 @@ unsafe fn bpf_get_trace_vprintk_proto() -> &'static BpfFuncProto {
 
 // BPF调用实现
 unsafe extern "C" fn bpf_seq_printf(m: *mut SeqFile, fmt: *const c_char, fmt_size: c_uint, args: *const c_void, data_len: c_uint) -> c_int {
-    let mut data = BpfBprintfData {
+    let mut data = bpf_bprintf_data {
         get_bin_args: true,
-        // 初始化其他字段...
+        
+        buffer : Vec::new(),
+        size: 0,
+        capacity: 0,
     };
     let num_args = data_len / 8;
 
@@ -668,7 +768,7 @@ struct BpfFuncProto {
 }
 
 // 实例化BPF函数原型
-static BPF_SEQ_PRINTF_BTF_PROTO: BpfFuncProto = BpfFuncProto {
+static BPF_SEQ_PRINTF_BTF_PROTO: bpf_func_proto = bpf_func_proto {
     func: bpf_seq_printf_btf, // 指向假设的外部函数
     gpl_only: true,
     ret_type: ReturnType::Integer,
@@ -677,6 +777,9 @@ static BPF_SEQ_PRINTF_BTF_PROTO: BpfFuncProto = BpfFuncProto {
     arg2_type: ArgType::PtrToMemReadOnly,
     arg3_type: ArgType::ConstSizeOrZero,
     arg4_type: ArgType::Anything,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //548-609
 // // 假设的外部内容，用于提供必要的上下文
@@ -863,7 +966,7 @@ fn __bpf_perf_event_output(regs: &PtRegs, map: &BpfMap, flags: u64, sd: &PerfSam
 // const PERF_COUNT_SW_BPF_OUTPUT: u64 = 0x...;
 
 // 示例函数原型定义
-let bpf_perf_event_read_value_proto = BpfFuncProto {
+static bpf_perf_event_read_value_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_perf_event_read_value, // 假设这个函数已经定义
     gpl_only: true,
     ret_type: RetType::Integer,
@@ -871,6 +974,10 @@ let bpf_perf_event_read_value_proto = BpfFuncProto {
     arg2_type: ArgType::Anything,
     arg3_type: ArgType::PtrToUninitMem,
     arg4_type: ArgType::ConstSize,
+
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 
 // 注意：这里的代码示例包含了一些Rust不支持的操作，如直接的裸指针操作和类型转换，因此在实际应用中需要通过安全的封装来实现。
@@ -947,7 +1054,7 @@ fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,
         perf_sample_save_raw_data(&sd, &raw);
 
         // 假设的输出函数
-        __bpf_perf_event_output(regs, map, flags, &sd)
+        bindings::__bpf_perf_event_output(regs, map, flags, &sd)
     });
 
     // 减少嵌套级别
@@ -956,15 +1063,18 @@ fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,
     err
 }
 
-let bpf_perf_event_output_proto = BpfFuncProto {
+static  bpf_perf_event_output_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_perf_event_output, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RetType::RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_CTX,
     arg2_type: ArgType::ARG_CONST_MAP_PTR,
-    arg3_type: ArgType:ARG_ANYTHING,
-    arg4_type: ArgType:ARG_PTR_TO_MEM | MEM_RDONLY,
-    arg5_type: ArgType:ARG_CONST_SIZE_OR_ZERO,
+    arg3_type: ArgType::ARG_ANYTHING,
+    arg4_type: ArgType::ARG_PTR_TO_MEM | MEM_RDONLY,
+    arg5_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
+
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //711-716
 
@@ -1036,8 +1146,6 @@ fn bpf_event_output(map:NonNull<bpf_map>, flags:u64 , meta:NonNull<c_void>, meta
             data: meta as *const u32, // 假设meta可以被转换为*const u8
         },
     };
-    let mut sd = NonNull<perf_sample_data>;
-    let mut regs = NonNull<pt_regs>;
     preempt_disable();
     let mut nest_level : i32= this_cpu_inc_return(bpf_event_output_nest_level);
     if WARN_ON_ONCE(nest_level as usize > ARRAY_SIZE ){
@@ -1047,14 +1155,14 @@ fn bpf_event_output(map:NonNull<bpf_map>, flags:u64 , meta:NonNull<c_void>, meta
         return Err(-EBUSY);
     }
 
-    let sd = this_cpu_ptr(&BPF_MISC_SDS.sds[nest_level - 1]);
-    let regs = this_cpu_ptr(&BPF_PT_REGS.regs[nest_level - 1]);
+    let mut sd:NonNull<perf_sample_data> = this_cpu_ptr(&BPF_MISC_SDS.sds[nest_level - 1]);
+    let mut regs:NonNull<pt_regs> = this_cpu_ptr(&BPF_PT_REGS.regs[nest_level - 1]);
 
     perf_fetch_caller_regs(regs);
     perf_sample_data_init(sd, 0, 0);
     perf_sample_save_raw_data(sd, &raw);
 
-    let ret = __bpf_perf_event_output(regs, map.as_ptr(), flags, sd)?;
+    let ret = __bpf_perf_event_output(regs, &(map.as_ptr()), flags, sd)?;
 
     // 正确的退出点
     this_cpu_dec(&BPF_EVENT_OUTPUT_NEST_LEVEL);
@@ -1089,31 +1197,52 @@ pub const bpf_get_current_task_proto: bpf_func_proto = bpf_func_proto {
     func: Some(bpf_get_current_task),
     gpl_only: true,
     ret_type: 0, // 假设 RET_INTEGER 的值为 0
+
+    arg1_type: 0,
+    arg2_type: 0,
+    arg3_type: 0,
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 
 // 使用 BPF_CALL_0 宏定义 bpf_get_current_task_btf 函数
 BPF_CALL_0!(bpf_get_current_task_btf);
 //777-829
-let bpf_get_current_task_btf_proto = bpf_func_proto {
+static bpf_get_current_task_btf_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_get_current_task_btf,
     gpl_only: true,
     ret_type: RET_PTR_TO_BTF_ID_TRUSTED,
     ret_btf_id: &btf_tracing_ids[BTF_TRACING_TYPE_TASK],
+
+    arg1_type: 0,
+    arg2_type: 0,
+    arg3_type: 0,
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
 };
 fn bpf_task_pt_regs(task : NonNull<task_struct>)-> u64{
     let ret = task_pt_regs(task) as u64;
     ret
 }
-BTF_ID_LIST(bpf_task_pt_regs_ids)
-BTF_ID(struct, pt_regs)
-let bpf_task_pt_regs_proto = bpf_func_proto {
+bindings::BTF_ID_LIST!(bpf_task_pt_regs_ids);
+bindings::BTF_ID!(struct, pt_regs);
+static bpf_task_pt_regs_proto:bpf_func_proto  = bpf_func_proto {
     func: bpf_task_pt_regs,
     gpl_only: true,
     arg1_type	: ARG_PTR_TO_BTF_ID,
 	arg1_btf_id	: &btf_tracing_ids[BTF_TRACING_TYPE_TASK],
 	ret_type	: RET_PTR_TO_BTF_ID,
 	ret_btf_id	: &bpf_task_pt_regs_ids[0],
-}
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+
+};
 
 fn bpf_current_task_under_cgroup(map: NonNull<bpf_map>,idx: u32) -> i64 {
     unsafe{
@@ -1129,25 +1258,31 @@ fn bpf_current_task_under_cgroup(map: NonNull<bpf_map>,idx: u32) -> i64 {
     }
 }
 
-let  bpf_current_task_under_cgroup_proto = bpf_func_proto{
+static  bpf_current_task_under_cgroup_proto:bpf_func_proto  = bpf_func_proto{
 	func           : bpf_current_task_under_cgroup,
 	gpl_only       : false,
 	ret_type       : RET_INTEGER,
 	arg1_type      : ARG_CONST_MAP_PTR,
 	arg2_type      : ARG_ANYTHING,
+
+    arg3_type      : 0,
+    arg4_type      : 0,
+    arg5_type      : 0,
+    arg1_btf_id    : 0,
+    ret_btf_id     : 0,
 };
 struct send_signal_irq_work {
-	irq_work:irq_work ;
-    task: NonNull<	task_struct >;
-	sig:u32;
-	type: pid_type;
-};
+	irq_work:irq_work ,
+    task: NonNull<task_struct>,
+	sig:u32,
+	typee: u32,
+}
 //830-842
-DEFINE_PER_CPU(send_signal_irq_work, send_signal_work);
+bindings::DEFINE_PER_CPU!(send_signal_irq_work, send_signal_work);
 fn do_bpf_send_signal(entry: *mut irq_work) 
 {
     let work = container_of(entry, send_signal_work, irq_work);
-    group_send_sig_info(work.sig, SEND_SIG_PRIV, work.task, work.type);
+    group_send_sig_info(work.sig, SEND_SIG_PRIV, work.task, work.typee);
     put_task_struct(work.task);
 }
 //843-883
@@ -1198,20 +1333,34 @@ fn bpf_send_signal_common(sig: u32, type_: PidType) -> i32 {
 fn bpf_send_signal(sig : u32)-> i32{
     return bpf_send_signal_common(sig, PIDTYPE_TGID);
 }
-let  bpf_send_signal_proto = bpf_func_proto{
+static  bpf_send_signal_proto:bpf_func_proto = bpf_func_proto{
 	func		: bpf_send_signal,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_ANYTHING,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 fn bpf_send_signal_thread(sig : u32)-> i32{
     return bpf_send_signal_common(sig, PIDTYPE_PID);
 }
-let  bpf_send_signal_thread_proto = bpf_func_proto{
+static  bpf_send_signal_thread_proto:bpf_func_proto = bpf_func_proto{
 	func		: bpf_send_signal_thread,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_ANYTHING,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 //908-936
 // BPF_CALL_3 宏的 Rust 实现
@@ -1433,20 +1582,27 @@ unsafe fn bpf_get_func_ip_tracing(ctx: *const c_void) -> u64 {
 }
 //1044-1049
 // 示例：创建一个BpfFuncProto实例
-let bpf_get_func_ip_proto_tracing = BpfFuncProto {
+static  bpf_get_func_ip_proto_tracing:bpf_func_proto = bpf_func_proto {
     // 假设的外部函数，这里用一个示例函数来代替
     // 实际使用时，应该替换为正确的函数指针
     func: bpf_get_func_ip_tracing, // 假设的函数指针
     gpl_only: true,
     ret_type: RetType::Integer,
     arg1_type: ArgType::PtrToCtx,
+
+    arg2_type: 0,
+    arg3_type: 0,
+    arg4_type: 0,
+    arg5_type: 0,
+    arg1_btf_id: 0,
+    ret_btf_id: 0,
 };
 //1052-1062
 extern "C"
 {
     fn get_kernel_nofault(instr: u32, fentry_ip: *mut u32) -> u32;
     fn is_endbr(instr: u32) -> u32;
-    const ENDBR_INSN_SIZE: u32;
+    static ENDBR_INSN_SIZE: u32;
 }
 
 pub fn get_entry_ip(fentry_ip: u64) -> u64 {
@@ -1477,38 +1633,66 @@ fn bpf_get_func_ip_kprobe(regs:Nonull<pt_regs>)-> i32 {
         }  
     }
 }
-let  bpf_get_func_ip_proto_kprobe = bpf_func_proto{
+static  bpf_get_func_ip_proto_kprobe : bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_func_ip_kprobe,
 	gpl_only	: true,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
-fn bpf_get_func_ip_kprobe_multi(regs : NonNull<pt_regs>)->i32{
+unsafe fn bpf_get_func_ip_kprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_kprobe_multi_cookie(current.bpf_ctx);
 }
-let  bpf_get_attach_cookie_proto_kmulti = bpf_func_proto{
+static  bpf_get_attach_cookie_proto_kmulti : bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_attach_cookie_kprobe_multi,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
-fn bpf_get_func_ip_uprobe_multi(regs : NonNull<pt_regs>)->i32{
+unsafe fn bpf_get_func_ip_uprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_uprobe_multi_entry_ip(current.bpf_ctx);
 }
-let  bpf_get_func_ip_proto_uprobe_multi = bpf_func_proto{
+static  bpf_get_func_ip_proto_uprobe_multi : bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_func_ip_uprobe_multi,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
-fn bpf_get_attach_cookie_uprobe_multi(regs : NonNull<pt_regs>)->i32{
+unsafe fn bpf_get_attach_cookie_uprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_uprobe_multi_cookie(current.bpf_ctx);
 }
-let  bpf_get_attach_cookie_proto_umulti = bpf_func_proto{
+static  bpf_get_attach_cookie_proto_umulti : bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_attach_cookie_uprobe_multi,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 fn bpf_get_attach_cookie_trace(ctx : NonNull<c_void>)-> i32{
     unsafe{
@@ -1516,22 +1700,36 @@ fn bpf_get_attach_cookie_trace(ctx : NonNull<c_void>)-> i32{
         return *(run_ctx.as_ptr()).cookie;
     }
 }
-let  bpf_get_attach_cookie_proto_trace = bpf_func_proto{
+static  bpf_get_attach_cookie_proto_trace:bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_attach_cookie_trace,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 fn bpf_get_attach_cookie_pe(ctx : NonNull<bpf_perf_event_data_kern>){
     unsafe{
         return *(ctx.as_ptr()).event.bpf_cookie;
     }
 }
-let  bpf_get_attach_cookie_proto_pe = bpf_func_proto{
+static  bpf_get_attach_cookie_proto_pe:bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_attach_cookie_pe,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 //1168-1175
 // BPF_CALL_1 宏的 Rust 实现
@@ -1550,11 +1748,18 @@ macro_rules! BPF_CALL_1 {
     };
 }
 //1176-1228
-let  bpf_get_attach_cookie_proto_tracing = bpf_func_proto{
+static  bpf_get_attach_cookie_proto_tracing:bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_attach_cookie_tracing,
 	gpl_only	: false,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
+
+    arg2_type	: 0,
+    arg3_type	: 0,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 fn bpf_get_branch_snapshot(buf:NonNull<c_void>,size:u32,flags:u64)->i32{
     unsafe{
@@ -1575,12 +1780,18 @@ fn bpf_get_branch_snapshot(buf:NonNull<c_void>,size:u32,flags:u64)->i32{
         }
     }
 }
-let  bpf_get_branch_snapshot_proto = bpf_func_proto{
+static  bpf_get_branch_snapshot_proto:bpf_func_proto = bpf_func_proto{
 	func		: bpf_get_branch_snapshot,
 	gpl_only	: true,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_UNINIT_MEM,
 	arg2_type	: ARG_CONST_SIZE_OR_ZERO,
+
+    arg3_type	: ARG_ANYTHING,
+    arg4_type	: 0,
+    arg5_type	: 0,
+    arg1_btf_id	: 0,
+    ret_btf_id	: 0,
 };
 fn get_func_arg(ctx:NonNull<c_void>,n:u32,value:NonNull<u64>)->i64{
     unsafe{
@@ -1596,12 +1807,18 @@ fn get_func_arg(ctx:NonNull<c_void>,n:u32,value:NonNull<u64>)->i64{
         return 0;
     }
 }
-let  bpf_get_func_arg_proto = bpf_func_proto{
+static  bpf_get_func_arg_proto:bpf_func_proto = bpf_func_proto{
 	func		: get_func_arg,
 	ret_type	: RET_INTEGER,
 	arg1_type	: ARG_PTR_TO_CTX,
 	arg2_type	: ARG_ANYTHING,
 	arg3_type	: ARG_PTR_TO_LONG,
+
+    arg4_type    : 0,
+    arg5_type    : 0,
+    arg1_btf_id  : 0,
+    ret_btf_id   : 0,
+    gpl_only     : false,
 };
 //1230-1237
 
@@ -1688,10 +1905,17 @@ fn get_func_arg_cnt(ctx: *mut std::ffi::c_void) -> u64 {
 }
 
 // 实例化BpfFuncProto
-static BPF_GET_FUNC_ARG_CNT_PROTO: BpfFuncProto = BpfFuncProto {
+static BPF_GET_FUNC_ARG_CNT_PROTO: bpf_func_proto = bpf_func_proto {
     func: get_func_arg_cnt,
     ret_type: RetType::Integer,
     arg1_type: ArgType::PtrToCtx,
+    arg2_type: 0,
+    arg3_type: 0,
+    arg4_type: 0,
+    arg5_type: 0,
+    gpl_only: false,
+    ret_btf_id: 0,
+    arg1_btf_id: 0,
 };
 #[cfg(CONFIG_KEYS)]
 mod bpf_kfunc {
@@ -2150,7 +2374,7 @@ fn bpf_tracing_func_proto(func_id: bpf_func_id, prog: &bpf_prog) -> Option<&'sta
         bpf_func_id::BPF_FUNC_get_func_ip => Some(&BPF_GET_FUNC_IP_PROTO_TRACING),
         bpf_func_id::BPF_FUNC_get_branch_snapshot => Some(&BPF_GET_BRANCH_SNAPSHOT_PROTO),
         bpf_func_id::BPF_FUNC_find_vma => Some(&BPF_FIND_VMA_PROTO),
-        bpf_func_id::BPF_FUNC_trace_vprintk => bpf_get_trace_vprintk_proto(),
+        bpf_func_id::BPF_FUNC_trace_vprintk => bindings::bpf_get_trace_vprintk_proto(),
         _ => bpf_base_func_proto(func_id),
     }
 }
