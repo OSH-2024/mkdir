@@ -1,8 +1,8 @@
-// 假设的外部函数和变量声明
-extern "C" {
-    fn bpf_seq_printf_btf(); // 假设的外部函数
-    static btf_seq_file_ids: [i32; 1]; // 假设的外部静态数组
-}
+// // 假设的外部函数和变量声明
+// extern "C" {
+//     fn bpf_seq_printf_btf(); // 假设的外部函数
+//     static btf_seq_file_ids: [i32; 1]; // 假设的外部静态数组
+// }
 
 // 定义返回类型的枚举
 #[derive(Debug, Clone, Copy)]
