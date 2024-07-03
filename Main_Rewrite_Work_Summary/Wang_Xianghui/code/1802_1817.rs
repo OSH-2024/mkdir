@@ -22,7 +22,7 @@
 // }
 
 // // 定义错误码
-const EINVAL: i32 = 22; // 假设的错误码，实际值应根据具体环境确定
+// const EINVAL: i32 = 22; // 假设的错误码，实际值应根据具体环境确定
 
 // Rust中的`bpf_perf_prog_read_value`函数实现
 unsafe fn bpf_perf_prog_read_value(

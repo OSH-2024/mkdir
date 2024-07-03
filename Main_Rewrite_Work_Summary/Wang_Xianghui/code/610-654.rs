@@ -1,18 +1,18 @@
-// 假设的外部内容，用于提供必要的上下文
-use std::ptr::NonNull;
+// // 假设的外部内容，用于提供必要的上下文
+// use std::ptr::NonNull;
 
-const BPF_F_INDEX_MASK: u64 = 0x...; // 假设的掩码值
-const BPF_F_CURRENT_CPU: u64 = 0x...; // 表示当前CPU的特殊值
-const E2BIG: i64 = -7; // 参数太大错误码
-const ENOENT: i64 = -2; // 没有该文件或目录的错误码
-const EINVAL: i64 = -22; // 无效参数错误码
-const EOPNOTSUPP: i64 = -95; // 操作不支持的错误码
+// const BPF_F_INDEX_MASK: u64 = 0x...; // 假设的掩码值
+// const BPF_F_CURRENT_CPU: u64 = 0x...; // 表示当前CPU的特殊值
+// const E2BIG: i64 = -7; // 参数太大错误码
+// const ENOENT: i64 = -2; // 没有该文件或目录的错误码
+// const EINVAL: i64 = -22; // 无效参数错误码
+// const EOPNOTSUPP: i64 = -95; // 操作不支持的错误码
 
-// 假设的结构体和函数
-struct PtRegs;
-struct BpfMap;
-struct PerfSampleData;
-struct PerfEvent;
+// // 假设的结构体和函数
+// struct PtRegs;
+// struct BpfMap;
+// struct PerfSampleData;
+// struct PerfEvent;
 
 struct BpfArray {
     map: BpfMap,
@@ -90,9 +90,9 @@ fn __bpf_perf_event_output(regs: &PtRegs, map: &BpfMap, flags: u64, sd: &PerfSam
     perf_event_output(event, sd, regs)
 }
 
-// 假设的常量定义
-const PERF_TYPE_SOFTWARE: u32 = 0x...;
-const PERF_COUNT_SW_BPF_OUTPUT: u64 = 0x...;
+// // 假设的常量定义
+// const PERF_TYPE_SOFTWARE: u32 = 0x...;
+// const PERF_COUNT_SW_BPF_OUTPUT: u64 = 0x...;
 
 // 示例函数原型定义
 let bpf_perf_event_read_value_proto = BpfFuncProto {
