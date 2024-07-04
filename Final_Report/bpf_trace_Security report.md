@@ -496,16 +496,17 @@ mod bpf_kfunc {
 总体概括,我们小组本次由 bpf_trace 模块改写的 Rust 代码利用了 Rust 语言的诸多特性,如所有权系统、生命周期管理、类型系统、并发原语、宏系统、模式匹配、错误处理、`unsafe` 块、迭代器、条件编译等,来增强代码的内存安全、类型安全、异常安全、线程安全、可读性和可维护性,加之我们小组在改写过程中谨慎的代码改写,提高了代码的整体质量和安全，同时保证了代码的可审计性和可控性。这些改进都有助于减少潜在的漏洞和安全风险,提高系统的稳定性和可靠性。
 
 ## 参考文献
-1. Steve Klabnik, Carol Nichols. The Rust Programming Language. No Starch Press, 2018
-2. Nicholas D. Matsakis, Felix S. Klock II. The Rust Language. ACM SIGAda Ada Letters, 2014
-3. Ralf Jung, Jacques-Henri Jourdan, Robbert Krebbers, Derek Dreyer. RustBelt: Securing the Foundations of the Rust Programming Language. Proceedings of the ACM on Programming Languages, 2018
-4. Abhiram Balasubramanian, Marek S. Baranowski, Anton Burtsev, Aurojit Panda, Zvonimir Rakamarić, Leonid Ryzhyk. System Programming in Rust: Beyond Safety. HotOS, 2017
-5.  梁红, 杨鹏. Rust语言安全性分析与应用. 网络空间安全, 2020
-6.  陈渝, 尹霞, 张峰. Rust语言机制与安全性. 软件学报, 2019
-7.  尹霞, 张峰, 陈渝. Rust安全编程模式. 软件学报, 2019
-8.  郭东东, 王之泰, 王飞. Rust语言的生命周期机制研究. 小型微型计算机系统,2020
-9.  张峰, 尹霞, 陈渝. Rust语言的异步编程模型研究. 软件学报, 2019
-10. 张汉东, 李先静, 郑纬民. Rust语言的模式匹配机制研究. 软件学报, 2019
+[1] Steve Klabnik, Carol Nichols. The Rust Programming Language. No Starch Press, 2018
+[2] Nicholas D. Matsakis, Felix S. Klock II. The Rust Language. ACM SIGAda Ada Letters, 2014
+[3] Ralf Jung, Jacques-Henri Jourdan, Robbert Krebbers, Derek Dreyer. RustBelt: Securing the Foundations of the Rust Programming Language. Proceedings of the ACM on Programming Languages, 2018
+[4] Abhiram Balasubramanian, Marek S. Baranowski, Anton Burtsev, Aurojit Panda, Zvonimir Rakamarić, Leonid Ryzhyk. System Programming in Rust: Beyond Safety. HotOS, 2017
+[5]Hui Xu, Zhuangbin Chen, Mingshen Sun, Yangfan Zhou, Michael Stumm. Memory-Safety Challenge Considered Solved? An In-Depth Study with All Rust CVEs. arXiv preprint arXiv, 2020
+[6]  梁红, 杨鹏. Rust语言安全性分析与应用. 网络空间安全, 2020
+[7]  陈渝, 尹霞, 张峰. Rust语言机制与安全性. 软件学报, 2019
+[8]  尹霞, 张峰, 陈渝. Rust安全编程模式. 软件学报, 2019
+[9]  郭东东, 王之泰, 王飞. Rust语言的生命周期机制研究. 小型微型计算机系统,2020
+[10]  张峰, 尹霞, 陈渝. Rust语言的异步编程模型研究. 软件学报, 2019
+[11] 张汉东, 李先静, 郑纬民. Rust语言的模式匹配机制研究. 软件学报, 2019
 
 ## 相关链接
 - [Rust 如何解决内存安全问题](https://www.infoq.cn/article/2UZfD5dt6mQYcJlJSkNM)
