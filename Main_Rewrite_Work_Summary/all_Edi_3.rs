@@ -45,10 +45,10 @@ static PF_EXITING                          : u32     = 0;
 static SEND_SIG_PRIV                       : u32     = 0;  
 static PIDTYPE_TGID                        : u32     = 0;  
 static PIDTYPE_PID                         : u32     = 0;  
-static BTF_F_COMPACT                       : u32     = 0;  
-static BTF_F_NONAME                        : u32     = 0;  
-static BTF_F_PTR_RAW                       : u32     = 0;  
-static BTF_F_ZERO                          : u32     = 0;  
+static BTF_F_COMPACT                       : u64     = 0;  
+static BTF_F_NONAME                        : u64     = 0;  
+static BTF_F_PTR_RAW                       : u64     = 0;  
+static BTF_F_ZERO                          : u64     = 0;  
 static KPROBE_FLAG_ON_FUNC_ENTRY           : u32     = 0;  
 static ARG_PTR_TO_LONG                     : u32     = 0;  
 static BPF_MAP_LOOKUP_ELEM_PROTO           : u32     = 0;
@@ -171,9 +171,9 @@ struct bpf_func_proto {
     arg3_type: u32,                     // 第三个参数的类型
     arg4_type: u32,                     // 第四个参数的类型
     arg5_type: u32,                     // 第五个参数的类型
-    arg1_btf_id : *const i32,           // 第一个参数的BTF ID
-    ret_btf_id: *const i32,             // 返回值的BTF ID
-    // 根据需要添加更多字段
+    // arg1_btf_id : *const i32,           // 第一个参数的BTF ID
+    // ret_btf_id: *const i32,             // 返回值的BTF ID
+    // // 根据需要添加更多字段
 }
 struct bpf_bprintf_data {
     buffer: Vec<u8>,
@@ -406,7 +406,7 @@ extern "C"
     fn capable(a:i32)->i32;
     fn trace_set_clr_event(a:i32,b:i32,c:i32)->i32;
     fn bpf_bprintf_prepare(a:i32,b:i32,c:i32,d:i32,e:i32)->i32;
-    fn bstr_printf(a:i32,b:i32,c:i32)->i32;
+    fn bstr_printf(a:i32,b:i32,c:i32,data: *mut c_void)->i32;
     fn trace_bpf_trace_printk(a:i32)->i32;
     fn __set_printk_clr_event();
     fn bpf_bprintf_cleanup(a:&mut i32);
@@ -435,8 +435,32 @@ extern "C"
     fn ____bpf_perf_event_output(regs:i32, map:i32, flags:i32, data:i32, size:i32);
     fn max(a: f64, b: f64) -> f64;
     fn min(a: u32, b: u32) -> u32;
-}
+    fn perfmon_capable();
+    fn kcalloc(a: u32, b: u32, c: u32) -> u32;
+    fn strcmp(a: *mut c_char, b: *mut c_char) -> i32;
+    fn bpf_prog_inc_misses_counter(prog: *mut bpf_prog);
+    fn bpf_prog_run(prog: *mut bpf_prog, args: *const u32);
+    fn for_each_possible_cpu(cpu: i32);
+    fn per_cpu_ptr(temp:  i32 ,cpu: i32);
+    fn register_module_notifier(temp:);
+    fn kvmalloc_array(cnt: u32, size: i32, temp: u32);
+    fn kvfree(temp:<() as Try>::Output);
+    fn module_put(temp: module);
+    fn unregister_fprobe(temp);
+    fn kallsyms_show_value()->bool;
+    fn warn_on_once(temp: bool);
+    fn migrate_disable();
+    fn migrate_enable();
+    fn bpf_set_run_ctx() -> *mut bpf_run_ctx;
+    fn bpf_reset_run_ctx(temp: *mut bpf_run_ctx);
+    fn krealloc_array(mods: &[*mut module], mods_cap: i32, temp: u32, ttemp: u32);
+    fn path_put(path: path);
+    fn current() -> bool;
 
+
+
+    // fn init_irq_work()
+}
 
 
 
@@ -689,17 +713,17 @@ fn bpf_probe_read_user_str(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_v
     }
 }
 static bpf_probe_read_user_str_proto : bpf_func_proto = bpf_func_proto {
-    func: bpf_probe_read_user_str, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
+    func: bpf_probe_read_user_str(0,0,0), // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
     ret_type: RET_INTEGER,
-    arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
-    arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
-    arg3_type: ArgType::ARG_ANYTHING,
+    arg1_type: ARG_PTR_TO_UNINIT_MEM,
+    arg2_type: ARG_CONST_SIZE_OR_ZERO,
+    arg3_type: ARG_ANYTHING,
 
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
+    // arg1_btf_id: 0,
+    // ret_btf_id: 0,
 };
 unsafe fn bpf_probe_read_kernel(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_void>) -> i32{
     let ret = bpf_probe_read_kernel_common(dst.as_ptr(), size, unsafe_ptr.as_ptr());
@@ -773,8 +797,6 @@ static bpf_probe_read_kernel_str_proto:bpf_func_proto = bpf_func_proto {
 
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 //286-326
 
@@ -811,8 +833,6 @@ static bpf_probe_read_compat_proto:bpf_func_proto=bpf_func_proto{
 
     arg4_type:0,
     arg5_type:0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // BPF_CALL_3(bpf_probe_read_compat_str, *mut c_void, dst, u32, size, *mut c_void, unsafe_ptr)
@@ -844,8 +864,6 @@ static bpf_probe_read_compat_str_proto: bpf_func_proto=bpf_func_proto
 
     arg4_type:0,
     arg5_type:0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 //327-359
 
@@ -876,8 +894,6 @@ static bpf_probe_write_user_proto:bpf_func_proto = bpf_func_proto {
     
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 //361-371
 // bpf_get_probe_write_proto 函数的 Rust 实现
@@ -954,7 +970,7 @@ macro_rules! BPF_CALL_5 {
 //407-420
 
 
-fn set_printk_clr_event() -> io::Result<()> {
+unsafe fn set_printk_clr_event() -> io::Result<()> {
     /*
      * This program might be calling bpf_trace_printk,
      * so enable the associated bpf_trace/bpf_trace_printk event.
@@ -986,15 +1002,13 @@ static mut BPF_TRACE_PRINTK_PROTO: bpf_func_proto = bpf_func_proto{
     arg3_type: ArgType::PtrToMemMaybeNullReadOnly,
     arg4_type: ArgType::ConstSizeOrZero,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // fn set_printk_clr_event() {
 //     // 这里是实现,在别的部分
 // }
 
-fn bpf_get_trace_printk_proto() -> &'static BpfFuncProto {
+unsafe fn bpf_get_trace_printk_proto() -> &'static BpfFuncProto {
     set_printk_clr_event();
     unsafe { &BPF_TRACE_PRINTK_PROTO }
 }
@@ -1127,8 +1141,6 @@ static BPF_TRACE_VPRINTK_PROTO: bpf_func_proto = bpf_func_proto {
     arg4_type: ArgType::ConstSizeOrZero,
 
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // unsafe extern "C" fn bpf_trace_vprintk() {
@@ -1220,8 +1232,6 @@ static BPF_SEQ_PRINTF_BTF_PROTO: bpf_func_proto = bpf_func_proto {
     arg3_type: ArgType::ConstSizeOrZero,
     arg4_type: ArgType::Anything,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 //548-609
 // // 假设的外部内容，用于提供必要的上下文
@@ -1374,7 +1384,7 @@ enum RetType {
 // }
 
 // Rust中的__bpf_perf_event_output函数
-fn __bpf_perf_event_output(regs: &PtRegs, map: &bpf_map, flags: u64, sd: &PerfSampleData) -> i64 {
+unsafe fn __bpf_perf_event_output(regs: &PtRegs, map: &bpf_map, flags: u64, sd: &PerfSampleData) -> i64 {
     let array: &BpfArray = unsafe { &*(map as *const _ as *const BpfArray) }; // 使用unsafe进行类型转换
     let cpu = smp_processor_id();
     let mut index = flags & BPF_F_INDEX_MASK;
@@ -1418,8 +1428,6 @@ static bpf_perf_event_read_value_proto:bpf_func_proto = bpf_func_proto {
     arg4_type: ArgType::ConstSize,
 
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // 注意：这里的代码示例包含了一些Rust不支持的操作，如直接的裸指针操作和类型转换，因此在实际应用中需要通过安全的封装来实现。
@@ -1464,7 +1472,7 @@ struct PerCpu<T> {
 // }
 //661-709
 
-fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,data:NonNull<c_void>,size:u64)-> Result<(), i32>{
+unsafe fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,data:NonNull<c_void>,size:u64)-> Result<(), i32>{
     let raw   = perf_raw_record {
         frag: perf_frag_record {
             size,
@@ -1508,15 +1516,12 @@ fn bpf_perf_event_output(regs: NonNull<pt_regs>,map: NonNull<bpf_map>,flags:u64,
 static  bpf_perf_event_output_proto:bpf_func_proto = bpf_func_proto {
     func: bpf_perf_event_output, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
-    ret_type: RetType::RET_INTEGER,
-    arg1_type: ArgType::ARG_PTR_TO_CTX,
-    arg2_type: ArgType::ARG_CONST_MAP_PTR,
-    arg3_type: ArgType::ARG_ANYTHING,
-    arg4_type: ArgType::ARG_PTR_TO_MEM | MEM_RDONLY,
-    arg5_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
-
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
+    ret_type: RET_INTEGER,
+    arg1_type:ARG_PTR_TO_CTX,
+    arg2_type:ARG_CONST_MAP_PTR,
+    arg3_type:ARG_ANYTHING,
+    arg4_type:ARG_PTR_TO_MEM | MEM_RDONLY,
+    arg5_type:ARG_CONST_SIZE_OR_ZERO,
 };
 //711-716
 
@@ -1570,7 +1575,7 @@ impl<T> PerCpu<T> {
     }
 }
 //718-759
-fn bpf_event_output(map:NonNull<bpf_map>, flags:u64 , meta:NonNull<c_void>, meta_size:u64 ,ctx:NonNull<c_void>, ctx_size:u64 , ctx_copy:bpf_ctx_copy_t )->u64{
+unsafe fn bpf_event_output(map:NonNull<bpf_map>, flags:u64 , meta:NonNull<c_void>, meta_size:u64 ,ctx:NonNull<c_void>, ctx_size:u64 , ctx_copy:bpf_ctx_copy_t )->u64{
     let frag= perf_raw_frag{
         copy: ctx_copy,
         size: ctx_size,
@@ -1603,7 +1608,7 @@ fn bpf_event_output(map:NonNull<bpf_map>, flags:u64 , meta:NonNull<c_void>, meta
     let mut regs:NonNull<pt_regs> = this_cpu_ptr(&BPF_PT_REGS.regs[nest_level - 1]);
 
     perf_fetch_caller_regs(regs);
-    perf_sample_data_init(sd, 0, 0);
+    perf_sample_data_init(sd, 0);
     perf_sample_save_raw_data(sd, &raw);
 
     let ret = __bpf_perf_event_output(regs, &(map.as_ptr()), flags, sd)?;
@@ -1647,8 +1652,6 @@ pub const bpf_get_current_task_proto: bpf_func_proto = bpf_func_proto {
     arg3_type: 0,
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // 使用 BPF_CALL_0 宏定义 bpf_get_current_task_btf 函数
@@ -1665,7 +1668,6 @@ static bpf_get_current_task_btf_proto:bpf_func_proto = bpf_func_proto {
     arg3_type: 0,
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
 };
 fn bpf_task_pt_regs(task : NonNull<task_struct>)-> u64{
     let ret = task_pt_regs(task) as u64;
@@ -1677,9 +1679,7 @@ static bpf_task_pt_regs_proto:bpf_func_proto  = bpf_func_proto {
     func: bpf_task_pt_regs,
     gpl_only: true,
     arg1_type	: ARG_PTR_TO_BTF_ID,
-	arg1_btf_id	: &btf_tracing_ids[BTF_TRACING_TYPE_TASK],
 	ret_type	: RET_PTR_TO_BTF_ID,
-	ret_btf_id	: &bpf_task_pt_regs_ids[0],
 
     arg2_type	: 0,
     arg3_type	: 0,
@@ -1712,20 +1712,18 @@ static  bpf_current_task_under_cgroup_proto:bpf_func_proto  = bpf_func_proto{
     arg3_type      : 0,
     arg4_type      : 0,
     arg5_type      : 0,
-    arg1_btf_id    : 0,
-    ret_btf_id     : 0,
 };
 
 //830-842
 bindings::DEFINE_PER_CPU!(send_signal_irq_work, send_signal_work);
-fn do_bpf_send_signal(entry: *mut irq_work) 
+unsafe fn do_bpf_send_signal(entry: *mut irq_work) 
 {
     let work = container_of(entry, send_signal_work, irq_work);
     group_send_sig_info(work.sig, SEND_SIG_PRIV, work.task, work.typee);
     put_task_struct(work.task);
 }
 //843-883
-fn bpf_send_signal_common(sig: u32, type_: PidType) -> i32 {
+unsafe fn bpf_send_signal_common(sig: u32, type_: PidType) -> i32 {
     let work: Option<&mut SendSignalIrqWork>;
 
     unsafe {
@@ -1770,7 +1768,7 @@ fn bpf_send_signal_common(sig: u32, type_: PidType) -> i32 {
 }
 
 //884-906
-fn bpf_send_signal(sig : u32)-> i32{
+unsafe fn bpf_send_signal(sig : u32)-> i32{
     return bpf_send_signal_common(sig, PIDTYPE_TGID);
 }
 static  bpf_send_signal_proto:bpf_func_proto = bpf_func_proto{
@@ -1783,8 +1781,6 @@ static  bpf_send_signal_proto:bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
 };
 fn bpf_send_signal_thread(sig : u32)-> i32{
     return bpf_send_signal_common(sig, PIDTYPE_PID);
@@ -1799,8 +1795,6 @@ static  bpf_send_signal_thread_proto:bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
 };
 //908-936
 // BPF_CALL_3 宏的 Rust 实现
@@ -1875,7 +1869,7 @@ enum BpfAttachType {
 // 允许列表的静态初始化
 static BTF_ALLOWLIST_D_PATH: btf_id_set = btf_id_set::new();
 
-fn bpf_d_path_allowed(prog: &BpfProg) -> bool {
+unsafe fn bpf_d_path_allowed(prog: &BpfProg) -> bool {
     if prog.prog_type == BpfProgType::Tracing && prog.expected_attach_type == BpfAttachType::TraceIter {
         return true;
     }
@@ -1910,7 +1904,7 @@ const BTF_F_ALL: u64 = BTF_F_COMPACT | BTF_F_NONAME | BTF_F_PTR_RAW | BTF_F_ZERO
 //     type_id: u32,
 // }
 
-fn bpf_btf_printf_prepare(ptr: &BtfPtr, btf_ptr_size: u32, flags: u64) -> Result<(), i32> {
+unsafe fn bpf_btf_printf_prepare(ptr: &BtfPtr, btf_ptr_size: u32, flags: u64) -> Result<(), i32> {
     if flags & !BTF_F_ALL != 0 {
         return Err(-EINVAL);
     }
@@ -2025,8 +2019,6 @@ static  bpf_get_func_ip_proto_tracing:bpf_func_proto = bpf_func_proto {
     arg3_type: 0,
     arg4_type: 0,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 //1052-1062
 extern "C"
@@ -2074,8 +2066,7 @@ static  bpf_get_func_ip_proto_kprobe : bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 unsafe fn bpf_get_func_ip_kprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_kprobe_multi_cookie(current.bpf_ctx);
@@ -2090,8 +2081,7 @@ static  bpf_get_attach_cookie_proto_kmulti : bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 unsafe fn bpf_get_func_ip_uprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_uprobe_multi_entry_ip(current.bpf_ctx);
@@ -2106,8 +2096,7 @@ static  bpf_get_func_ip_proto_uprobe_multi : bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 unsafe fn bpf_get_attach_cookie_uprobe_multi(regs : NonNull<pt_regs>)->i32{
     return bpf_uprobe_multi_cookie(current.bpf_ctx);
@@ -2122,8 +2111,7 @@ static  bpf_get_attach_cookie_proto_umulti : bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 fn bpf_get_attach_cookie_trace(ctx : NonNull<c_void>)-> i32{
     unsafe{
@@ -2141,8 +2129,7 @@ static  bpf_get_attach_cookie_proto_trace:bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 fn bpf_get_attach_cookie_pe(ctx : NonNull<bpf_perf_event_data_kern>){
     unsafe{
@@ -2159,8 +2146,7 @@ static  bpf_get_attach_cookie_proto_pe:bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 //1168-1175
 // BPF_CALL_1 宏的 Rust 实现
@@ -2189,8 +2175,7 @@ static  bpf_get_attach_cookie_proto_tracing:bpf_func_proto = bpf_func_proto{
     arg3_type	: 0,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 fn bpf_get_branch_snapshot(buf:NonNull<c_void>,size:u32,flags:u64)->i32{
     unsafe{
@@ -2221,8 +2206,7 @@ static  bpf_get_branch_snapshot_proto:bpf_func_proto = bpf_func_proto{
     arg3_type	: ARG_ANYTHING,
     arg4_type	: 0,
     arg5_type	: 0,
-    arg1_btf_id	: 0,
-    ret_btf_id	: 0,
+    
 };
 fn get_func_arg(ctx:NonNull<c_void>,n:u32,value:NonNull<u64>)->i64{
     unsafe{
@@ -2247,8 +2231,6 @@ static  bpf_get_func_arg_proto:bpf_func_proto = bpf_func_proto{
 
     arg4_type    : 0,
     arg5_type    : 0,
-    arg1_btf_id  : 0,
-    ret_btf_id   : 0,
     gpl_only     : false,
 };
 //1230-1237
@@ -2345,8 +2327,6 @@ static BPF_GET_FUNC_ARG_CNT_PROTO: bpf_func_proto = bpf_func_proto {
     arg4_type: 0,
     arg5_type: 0,
     gpl_only: false,
-    ret_btf_id: 0,
-    arg1_btf_id: 0,
 };
 #[cfg(feature = "CONFIG_KEYS")]
 mod bpf_kfunc {
@@ -3203,8 +3183,6 @@ const BPF_READ_BRANCH_RECORDS_PROTO: bpf_func_proto = bpf_func_proto {
     arg3_type: ARG_CONST_SIZE_OR_ZERO,
     arg4_type: ARG_ANYTHING,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // pe_prog_func_proto 函数
@@ -3268,8 +3246,6 @@ static  bpf_perf_event_output_proto_raw_tp: bpf_func_proto = bpf_func_proto{
 	arg3_type	: ARG_ANYTHING,
 	arg4_type	: ARG_PTR_TO_MEM | MEM_RDONLY,
 	arg5_type	: ARG_CONST_SIZE_OR_ZERO,
-    arg1_btf_id : 0,
-    ret_btf_id  : 0,
 };
 extern "C" {
     static bpf_skb_output_proto: bpf_func_proto;
@@ -3299,8 +3275,6 @@ static  bpf_get_stackid_proto_raw_tp: bpf_func_proto = bpf_func_proto{
 
     arg4_type    : 0,
     arg5_type    : 0,
-    arg1_btf_id : 0,
-    ret_btf_id  : 0,
 };
 fn bpf_get_stack_raw_tp(args : NonNull<bpf_raw_tracepoint_args>,buf:NonNull<c_void>,size:u32,flags:u64){
     unsafe{
@@ -3326,8 +3300,6 @@ const BPF_GET_STACK_PROTO_RAW_TP: bpf_func_proto = bpf_func_proto {
     arg3_type: ARG_CONST_SIZE_OR_ZERO,
     arg4_type: ARG_ANYTHING,
     arg5_type: 0,
-    arg1_btf_id: 0,
-    ret_btf_id: 0,
 };
 
 // raw_tp_prog_func_proto 函数
@@ -3731,7 +3703,7 @@ fn perf_event_detach_bpf_prog(event: &mut perf_event) {
     }
 }
 
-fn perf_event_query_prog_array(event: &perf_event, info: *mut c_void) -> i32 {
+unsafe fn perf_event_query_prog_array(event: &perf_event, info: *mut c_void) -> i32 {
     // 将 info 转换为 perf_event_query_bpf 类型的可变引用
     let uquery = info as *mut perf_event_query_bpf;
     let mut query = perf_event_query_bpf::default();
@@ -3747,9 +3719,7 @@ fn perf_event_query_prog_array(event: &perf_event, info: *mut c_void) -> i32 {
     }
 
     // 从用户空间复制查询信息
-    if copy_from_user(&mut query, uquery, std::mem::size_of::<perf_event_query_bpf>()).is_err() {
-        return -EFAULT;
-    }
+
 
     let ids_len = query.ids_len;
     // 检查查询的程序数量是否超过限制
@@ -3799,7 +3769,7 @@ extern "C" {
 
 
 
-fn bpf_get_raw_tracepoint(name: *const c_char) -> *mut bpf_raw_event_map 
+unsafe fn bpf_get_raw_tracepoint(name: *const c_char) -> *mut bpf_raw_event_map 
 {
     let mut btp: *mut bpf_raw_event_map = __start__bpf_raw_tp;
     while btp < __stop__bpf_raw_tp 
@@ -3813,7 +3783,7 @@ fn bpf_get_raw_tracepoint(name: *const c_char) -> *mut bpf_raw_event_map
     return bpf_get_raw_tracepoint_module(name);
 }
 
-fn bpf_put_raw_tracepoint(btp: *mut bpf_raw_event_map) 
+unsafe fn bpf_put_raw_tracepoint(btp: *mut bpf_raw_event_map) 
 {
     let modd: *mut module;
     preempt_disable();
@@ -3822,7 +3792,7 @@ fn bpf_put_raw_tracepoint(btp: *mut bpf_raw_event_map)
     preempt_enable();
 }
 
-fn __bpf_trace_run(prog: *mut bpf_prog, args: *mut c_ulong) 
+unsafe fn __bpf_trace_run(prog: *mut bpf_prog, args: *mut c_ulong) 
 {
 'out: loop {
     cant_sleep();
@@ -3919,18 +3889,18 @@ macro_rules! REPEAT_12 {
 // }
 
 // 生成 bpf_trace_runX 函数
-bindings::BPF_TRACE_DEFN_x!(1);
-bindings::BPF_TRACE_DEFN_x!(2);
-bindings::BPF_TRACE_DEFN_x!(3);
-bindings::BPF_TRACE_DEFN_x!(4);
-bindings::BPF_TRACE_DEFN_x!(5);
-bindings::BPF_TRACE_DEFN_x!(6);
-bindings::BPF_TRACE_DEFN_x!(7);
-bindings::BPF_TRACE_DEFN_x!(8);
-bindings::BPF_TRACE_DEFN_x!(9);
-bindings::BPF_TRACE_DEFN_x!(10);
-bindings::BPF_TRACE_DEFN_x!(11);
-bindings::BPF_TRACE_DEFN_x!(12);
+// bindings::BPF_TRACE_DEFN_x!(1);
+// bindings::BPF_TRACE_DEFN_x!(2);
+// bindings::BPF_TRACE_DEFN_x!(3);
+// bindings::BPF_TRACE_DEFN_x!(4);
+// bindings::BPF_TRACE_DEFN_x!(5);
+// bindings::BPF_TRACE_DEFN_x!(6);
+// bindings::BPF_TRACE_DEFN_x!(7);
+// bindings::BPF_TRACE_DEFN_x!(8);
+// bindings::BPF_TRACE_DEFN_x!(9);
+// bindings::BPF_TRACE_DEFN_x!(10);
+// bindings::BPF_TRACE_DEFN_x!(11);
+// bindings::BPF_TRACE_DEFN_x!(12);
 
 // 2432-2577
 
@@ -4015,14 +3985,14 @@ fn bpf_get_perf_event_info(event: *const perf_event, prog_id: *mut u32, fd_type:
     return err;
 }
 
-fn send_signal_irq_work_init() -> i32
+unsafe fn send_signal_irq_work_init() -> i32
 {
     let cpu: i32;
     let work: *mut send_signal_irq_work;
 
     for_each_possible_cpu(cpu);
     {
-        work = per_cpu_ptr(&send_signal_work, cpu);
+        work = per_cpu_ptr(0, cpu);
         init_irq_work(&work.irq_work, do_bpf_send_signal);
     }
     return 0;
@@ -4081,14 +4051,12 @@ static bpf_module_nb: notifier_block = notifier_block
     notifier_call : bpf_event_notify,
 };
 
-fn bpf_module_init() -> i32
+unsafe fn bpf_module_init() -> i32
 {
     register_module_notifier(&bpf_module_nb);
     return 0;
 }
 
-// TODO:
-fs_initcall!(bpf_event_init);
 
 // 2578-2602
 
@@ -4120,7 +4088,7 @@ struct user_syms
 }
 
 // 2603-2769
-fn copy_user_syms(us: &mut user_syms, usyms: *const u64, cnt: u32) -> Result<(), i32> {
+unsafe fn copy_user_syms(us: &mut user_syms, usyms: *const u64, cnt: u32) -> Result<(), i32> {
     // 分配内存用于存储符号指针数组
     let mut syms = kvmalloc_array(cnt as usize, std::mem::size_of::<*const u8>(), GFP_KERNEL)?;
 
@@ -4160,7 +4128,7 @@ fn copy_user_syms(us: &mut user_syms, usyms: *const u64, cnt: u32) -> Result<(),
     Ok(())
 }
 
-fn kprobe_multi_put_modules(mods: &[*mut module], cnt: u32) {
+unsafe fn kprobe_multi_put_modules(mods: &[*mut module], cnt: u32) {
     // 遍历模块指针数组
     for i in 0..cnt as usize {
         // 获取当前模块指针
@@ -4170,14 +4138,14 @@ fn kprobe_multi_put_modules(mods: &[*mut module], cnt: u32) {
     }
 }
 
-fn free_user_syms(us: &mut user_syms) {
+unsafe fn free_user_syms(us: &mut user_syms) {
     // 释放符号指针数组的内存
     kvfree(us.syms);
     // 释放符号名称缓冲区的内存
     kvfree(us.buf);
 }
 
-fn bpf_kprobe_multi_link_release(link: &mut bpf_link) {
+unsafe fn bpf_kprobe_multi_link_release(link: &mut bpf_link) {
     // 从 bpf_link 结构体中获取 bpf_kprobe_multi_link 结构体
     let kmulti_link = unsafe {
         &mut *(link as *mut bpf_link as *mut bpf_kprobe_multi_link)
@@ -4190,7 +4158,7 @@ fn bpf_kprobe_multi_link_release(link: &mut bpf_link) {
     kprobe_multi_put_modules(&kmulti_link.mods, kmulti_link.mods_cnt);
 }
 
-fn bpf_kprobe_multi_link_dealloc(link: *mut bpf_link) {
+unsafe fn bpf_kprobe_multi_link_dealloc(link: *mut bpf_link) {
     // 从 bpf_link 结构体中获取 bpf_kprobe_multi_link 结构体
     let kmulti_link = unsafe {
         &mut *(link as *mut bpf_kprobe_multi_link)
@@ -4209,7 +4177,7 @@ fn bpf_kprobe_multi_link_dealloc(link: *mut bpf_link) {
     unsafe{kfree(kmulti_link as *mut bpf_kprobe_multi_link as *mut c_void);}
 }
 
-fn bpf_kprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_info) -> i32 {
+unsafe fn bpf_kprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_info) -> i32 {
     // 获取用户空间的地址数组和数组大小
     let uaddrs = info.kprobe_multi.addrs as *mut u64;
     let mut ucount = info.kprobe_multi.count;
@@ -4239,7 +4207,7 @@ fn bpf_kprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_link_inf
     }
 
     // 如果当前进程有权限查看符号值
-    if kallsyms_show_value(current_cred()) {
+    if kallsyms_show_value() {
         // 将内核空间的地址数组复制到用户空间
         if copy_to_user(uaddrs, kmulti_link.addrs, ucount * std::mem::size_of::<u64>()).is_err() {
             return -EFAULT;
@@ -4318,62 +4286,62 @@ fn bpf_kprobe_multi_cookie_cmp(a: *const c_void, b: *const c_void, priv_data: *c
     bpf_kprobe_multi_addrs_cmp(a, b)
 }
 
-fn bpf_kprobe_multi_cookie(ctx: *mut bpf_run_ctx) -> u64 {
-    // 检查 ctx 是否为空指针
-    if ctx.is_null() {
-        warn_on_once(true);
-        return 0;
-    }
+// unsafe fn bpf_kprobe_multi_cookie(ctx: *mut bpf_run_ctx) -> u64 {
+//     // 检查 ctx 是否为空指针
+//     if ctx.is_null() {
+//         warn_on_once(true);
+//         return 0;
+//     }
 
-    // 获取当前线程的 bpf_kprobe_multi_run_ctx
-    let run_ctx = unsafe {
-        &mut *(current.bpf_ctx as *mut bpf_kprobe_multi_run_ctx)
-    };
+//     // 获取当前线程的 bpf_kprobe_multi_run_ctx
+//     let run_ctx = unsafe {
+//         &mut *(current.bpf_ctx as *mut bpf_kprobe_multi_run_ctx)
+//     };
 
-    // 获取 bpf_kprobe_multi_link
-    let link = run_ctx.link;
+//     // 获取 bpf_kprobe_multi_link
+//     let link = run_ctx.link;
 
-    // 如果 link 的 cookies 为空,则返回 0
-    if link.cookies.is_null() {
-        return 0;
-    }
+//     // 如果 link 的 cookies 为空,则返回 0
+//     if link.cookies.is_null() {
+//         return 0;
+//     }
 
-    // 获取 entry_ip
-    let entry_ip = run_ctx.entry_ip;
+//     // 获取 entry_ip
+//     let entry_ip = run_ctx.entry_ip;
 
-    // 在 link 的 addrs 中二分查找 entry_ip
-    let addr = unsafe {
-        bsearch(
-            &entry_ip,
-            link.addrs,
-            link.cnt as usize,
-            std::mem::size_of::<u64>(),
-            bpf_kprobe_multi_addrs_cmp,
-        )
-    };
+//     // 在 link 的 addrs 中二分查找 entry_ip
+//     let addr = unsafe {
+//         bsearch(
+//             &entry_ip,
+//             link.addrs,
+//             link.cnt as usize,
+//             std::mem::size_of::<u64>(),
+//             bpf_kprobe_multi_addrs_cmp,
+//         )
+//     };
 
-    // 如果未找到对应的地址,则返回 0
-    if addr.is_null() {
-        return 0;
-    }
+//     // 如果未找到对应的地址,则返回 0
+//     if addr.is_null() {
+//         return 0;
+//     }
 
-    // 计算 cookie 的位置
-    let cookie = unsafe {
-        link.cookies.offset((addr as usize - link.addrs as usize) / std::mem::size_of::<u64>())
-    };
+//     // 计算 cookie 的位置
+//     let cookie = unsafe {
+//         link.cookies.offset((addr as usize - link.addrs as usize) / std::mem::size_of::<u64>())
+//     };
 
-    // 返回 cookie 的值
-    unsafe { *cookie }
-}
+//     // 返回 cookie 的值
+//     unsafe { *cookie }
+// }
 
 // 2770-2843
-fn bpf_kprobe_multi_entry_ip(ctx: *mut bpf_run_ctx) -> u64
-{
-    unsafe{let run_ctx: *mut bpf_kprobe_multi_run_ctx = container_of((*ctx).bpf_ctx, bpf_kprobe_multi_run_ctx, run_ctx);
-    return (*run_ctx).entry_ip;}
-}
+// fn bpf_kprobe_multi_entry_ip(ctx: *mut bpf_run_ctx) -> u64
+// {
+//     unsafe{let run_ctx: *mut bpf_kprobe_multi_run_ctx = container_of((*ctx).bpf_ctx, bpf_kprobe_multi_run_ctx, run_ctx);
+//     return (*run_ctx).entry_ip;}
+// }
 
-fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulong, regs: *mut pt_regs) -> i32
+unsafe fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulong, regs: *mut pt_regs) -> i32
 {
     let run_ctx: bpf_kprobe_multi_run_ctx = bpf_kprobe_multi_run_ctx{
         link : link,
@@ -4394,7 +4362,7 @@ fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulon
     unsafe 
     {migrate_disable();
     rcu_read_lock();
-    old_run_ctx = bpf_set_run_ctx(&run_ctx.run_ctx);
+    old_run_ctx = bpf_set_run_ctx();
     err = bpf_prog_run((*link).link.prog, regs);
     bpf_reset_run_ctx(old_run_ctx);
     rcu_read_unlock();
@@ -4437,7 +4405,7 @@ fn kprobe_multi_link_prog_run(link: *mut bpf_kprobe_multi_link, entry_ip: c_ulon
 
 // }
 
-fn kprobe_multi_link_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulong, regs: *mut pt_regs, data: *mut c_void) -> i32
+unsafe fn kprobe_multi_link_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulong, regs: *mut pt_regs, data: *mut c_void) -> i32
 {
     let link: *mut bpf_kprobe_multi_link;
 
@@ -4446,7 +4414,7 @@ fn kprobe_multi_link_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulon
     return 0;
 }
 
-fn kprobe_multi_link_exit_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulong, regs: *mut pt_regs, data: *mut c_void)
+unsafe fn kprobe_multi_link_exit_handler(fp: *mut fprobe, fentry_ip: c_ulong, ret_ip: c_ulong, regs: *mut pt_regs, data: *mut c_void)
 {
     let link: *mut bpf_kprobe_multi_link;
 
@@ -4539,7 +4507,7 @@ fn has_module(arr: &modules_array, module: &module) -> bool {
 // 2895-2933
 // get_modules_for_addrs 函数的 Rust 实现
 // TODO:
-fn get_modules_for_addrs(mods: *mut *mut *mut module , addrs: &[u64], cnt: i32) -> Result<Vec<&module>, i32> {
+unsafe fn get_modules_for_addrs(mods: *mut *mut *mut module , addrs: &[u64], cnt: i32) -> Result<Vec<&module>, i32> {
     let mut arr = modules_array::default();
     let mut err = 0;
 
@@ -4601,7 +4569,7 @@ fn addrs_check_error_injection_list(addrs: &[u64]) -> Result<(), i32> {
 // 2945-3086
 // bpf_kprobe_multi_link_attach 函数的 Rust 实现
 #[cfg((feature = "CONFIG_FPROBE"))]
-fn bpf_kprobe_multi_link_attach(attr: &bpf_attr, prog: &mut bpf_prog) -> Result<(), i32> {
+unsafe fn bpf_kprobe_multi_link_attach(attr: &bpf_attr, prog: &mut bpf_prog) -> Result<(), i32> {
     // 检查系统是否支持 64 位架构
     if std::mem::size_of::<u64>() != std::mem::size_of::<*mut c_void>() {
         return Err(-EOPNOTSUPP);
@@ -4733,20 +4701,20 @@ fn bpf_kprobe_multi_link_attach(attr: &bpf_attr, prog: &mut bpf_prog) -> Result<
 // 3087-3158
 
 #[cfg(not(feature = "CONFIG_FPROBE"))]
-fn bpf_kprobe_multi_link_attach(attr: *mut bpf_attr, prog: *mut bpf_prog) -> i32 
-{
-    return -EOPNOTSUPP;
-}
+// fn bpf_kprobe_multi_link_attach(attr: *mut bpf_attr, prog: *mut bpf_prog) -> i32 
+// {
+//     return -EOPNOTSUPP;
+// }
 
-fn  bpf_kprobe_multi_cookie(ctx: *mut bpf_run_ctx) -> u64
-{
-    return 0;
-}
+// fn  bpf_kprobe_multi_cookie(ctx: *mut bpf_run_ctx) -> u64
+// {
+//     return 0;
+// }
 
-fn bpf_kprobe_multi_entry_ip(ctx: *mut bpf_run_ctx) -> u64
-{
-    return 0;
-}
+// fn bpf_kprobe_multi_entry_ip(ctx: *mut bpf_run_ctx) -> u64
+// {
+//     return 0;
+// }
 
 
 #[cfg(feature = "CONFIG_UPROBES")]
@@ -4794,7 +4762,7 @@ fn bpf_uprobe_multi_link_release(link: *mut bpf_link)
     bpf_uprobe_unregister(&umulti_link.path, umulti_link.uprobes, umulti_link.cnt);
 }
 
-fn bpf_uprobe_multi_link_dealloc(link: *mut bpf_link)
+unsafe fn bpf_uprobe_multi_link_dealloc(link: *mut bpf_link)
 {
     let umulti_link: *mut bpf_uprobe_multi_link = container_of(link,  bpf_uprobe_multi_link, link);
     if umulti_link.task != 0
@@ -4893,17 +4861,17 @@ unsafe fn bpf_uprobe_multi_link_fill_link_info(link: &bpf_link, info: &mut bpf_l
 // 3228-3314
 
 // 全局变量，使用 lazy_static 宏和 Mutex 来保证线程安全
-lazy_static! 
-{
-    static ref bpf_uprobe_multi_link_lops: Mutex<bpf_link_ops> = Mutex::new(bpf_link_ops 
-    {
-        release: bpf_uprobe_multi_link_release,
-        dealloc: bpf_uprobe_multi_link_dealloc,
-        fill_link_info: bpf_uprobe_multi_link_fill_link_info,
-    });
-}
+// lazy_static! 
+// {
+    // static ref bpf_uprobe_multi_link_lops: Mutex<bpf_link_ops> = Mutex::new(bpf_link_ops 
+//     {
+//         release: bpf_uprobe_multi_link_release,
+//         dealloc: bpf_uprobe_multi_link_dealloc,
+//         fill_link_info: bpf_uprobe_multi_link_fill_link_info,
+//     });
+// }
 
-fn uprobe_prog_run( uprobe: *mut bpf_uprobe,
+unsafe fn uprobe_prog_run( uprobe: *mut bpf_uprobe,
                     entry_ip: c_ulong,
                     regs: *mut pt_regs) -> i32
 {
@@ -4933,7 +4901,7 @@ fn uprobe_prog_run( uprobe: *mut bpf_uprobe,
     }
     migrate_disable();
 
-    old_run_ctx = bpf_set_run_ctx(run_ctx.run_ctx);
+    old_run_ctx = bpf_set_run_ctx();
     err = bpf_prog_run(link.link.prog, regs);
     bpf_reset_run_ctx(old_run_ctx);
 
@@ -4950,14 +4918,14 @@ fn uprobe_prog_run( uprobe: *mut bpf_uprobe,
     return err;
 }
 
-fn uprobe_multi_link_filter(con: *mut uprobe_consumer, ctx:  uprobe_filter_ctx, mm: *mut mm_struct) -> bool
+unsafe fn uprobe_multi_link_filter(con: *mut uprobe_consumer, ctx:  uprobe_filter_ctx, mm: *mut mm_struct) -> bool
 {
     let mut uprobe: Box<bpf_uprobe> = Box::new(bpf_uprobe::new());
     uprobe = container_of(con, bpf_uprobe, consumer);
     return uprobe.link.task.mm == mm;
 }
 
-fn uprobe_multi_link_handler(con: *mut uprobe_consumer, regs: *mut pt_regs) -> i32
+unsafe fn uprobe_multi_link_handler(con: *mut uprobe_consumer, regs: *mut pt_regs) -> i32
 {
     let mut uprobe: Box<bpf_uprobe> = Box::new(bpf_uprobe::new());
     uprobe = container_of(con, bpf_uprobe, consumer);
@@ -4965,7 +4933,7 @@ fn uprobe_multi_link_handler(con: *mut uprobe_consumer, regs: *mut pt_regs) -> i
 }
 
 
-fn uprobe_multi_link_ret_handler(con: *mut uprobe_consumer, func: c_ulong, regs: *mut pt_regs) -> i32
+unsafe fn uprobe_multi_link_ret_handler(con: *mut uprobe_consumer, func: c_ulong, regs: *mut pt_regs) -> i32
 {
     let mut uprobe: Box<bpf_uprobe> = Box::new(bpf_uprobe::new());
     uprobe = container_of(con, bpf_uprobe, consumer);
@@ -5004,7 +4972,7 @@ extern "C" {
 
 }
 
-fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32 
+unsafe fn bpf_uprobe_multi_link_attach(attr: &bpf_attr, prog: &bpf_prog) -> i32 
 {
     let mut link: Box<bpf_uprobe_multi_link> = Box::new(bpf_uprobe_multi_link::new());
     let mut uref_ctr_offsets :*mut c_ulong = std::ptr::null_mut();
