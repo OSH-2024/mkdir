@@ -360,9 +360,9 @@ struct bpf_run_ctx{
 }
 struct bpf_link_ops {
     // 释放 BPF kprobe 多链接的资源
-    release: extern "C" fn(*mut bpf_link) -> Some(i32),
+    release: extern "C" fn(*mut bpf_link) -> i32,
     // 释放 BPF kprobe 多链接占用的内存
-    dealloc: extern "C" fn(link: *mut bpf_link) -> Some(i32),
+    dealloc: extern "C" fn(link: *mut bpf_link) -> i32,
     // 填充 BPF kprobe 多链接的相关信息
     fill_link_info: extern "C" fn(link: *mut bpf_link, info: *mut bpf_link_info) -> c_int,
 }
@@ -442,11 +442,11 @@ extern "C"
     fn bpf_prog_run(prog: *mut bpf_prog, args: *const u32);
     fn for_each_possible_cpu(cpu: i32);
     fn per_cpu_ptr(temp:  i32 ,cpu: i32);
-    fn register_module_notifier(temp:);
+    fn register_module_notifier(temp:u32);
     fn kvmalloc_array(cnt: u32, size: i32, temp: u32);
-    fn kvfree(temp:<() as Try>::Output);
+    fn kvfree(temp:i32);
     fn module_put(temp: module);
-    fn unregister_fprobe(temp);
+    fn unregister_fprobe(temp:u32);
     fn kallsyms_show_value()->bool;
     fn warn_on_once(temp: bool);
     fn migrate_disable();
