@@ -14,135 +14,135 @@ use core::cell::UnsafeCell;
 // CONFIG_X86  feature
 // CONFIG_NET  feature
 // static CURRENT;
-static BPF_TRACE_MODULES                   : i32     = 0;
-static RET_INTEGER                         : i32     = 0;  
-static ARG_PTR_TO_CTX                      : i32     = 0;  
-static ARG_ANYTHING                        : i32     = 0;  
-static ARG_PTR_TO_UNINIT_MEM               : i32     = 0;  
-static ARG_CONST_SIZE_OR_ZERO              : i32     = 0;  
-static MEM_RDONLY                          : i32     = 0;  
-static CAP_SYS_ADMIN                       : i32     = 0;  
-static MAX_BPRINTF_BUF                     : i32     = 0;  
-static EINVAL                              : i32     = 0;  
-static ENOENT                              : i32     = 0;  
-static EOVERFLOW                           : i32     = 0;  
-static EOPNOTSUPP                          : i32     = 0;  
-static BPF_F_INDEX_MASK                    : i32     = 0;  
-static BPF_F_CURRENT_CPU                   : i32     = 0;  
-static E2BIG                               : i32     = 0;  
-static EBUSY                               : i32     = 0;  
-static PERF_TYPE_SOFTWARE                  : i32     = 0;  
-static ARRAY_SIZE                          : i32     = 0;  
-static RET_PTR_TO_BTF_ID_TRUSTED           : i32     = 0;  
-static BTF_TRACING_TYPE_TASK               : i32     = 0;  
-static ARG_PTR_TO_BTF_ID                   : i32     = 0;  
-static RET_PTR_TO_BTF_ID                   : i32     = 0;  
-static ARG_CONST_MAP_PTR                   : i32     = 0;  
-static PF_KTHREAD                          : i32     = 0;  
-static PF_EXITING                          : i32     = 0;  
-static SEND_SIG_PRIV                       : i32     = 0;  
-static PIDTYPE_TGID                        : i32     = 0;  
-static PIDTYPE_PID                         : i32     = 0;  
-static BTF_F_COMPACT                       : i32     = 0;  
-static BTF_F_NONAME                        : i32     = 0;  
-static BTF_F_PTR_RAW                       : i32     = 0;  
-static BTF_F_ZERO                          : i32     = 0;  
-static KPROBE_FLAG_ON_FUNC_ENTRY           : i32     = 0;  
-static ARG_PTR_TO_LONG                     : i32     = 0;  
-static BPF_MAP_LOOKUP_ELEM_PROTO           : i32     = 0;
-static BPF_MAP_UPDATE_ELEM_PROTO           : i32     = 0;
-static BPF_MAP_DELETE_ELEM_PROTO           : i32     = 0;
-static BPF_MAP_PUSH_ELEM_PROTO             : i32     = 0;
-static BPF_MAP_POP_ELEM_PROTO              : i32     = 0;
-static BPF_MAP_PEEK_ELEM_PROTO             : i32     = 0;
-static BPF_MAP_LOOKUP_PERCPU_ELEM_PROTO    : i32     = 0;
-static BPF_KTIME_GET_NS_PROTO              : i32     = 0;
-static BPF_KTIME_GET_BOOT_NS_PROTO         : i32     = 0;
-static BPF_TAIL_CALL_PROTO                 : i32     = 0;
-static BPF_GET_CURRENT_PID_TGID_PROTO      : i32     = 0;
-static BPF_GET_CURRENT_TASK_PROTO          : i32     = 0;
-static BPF_GET_CURRENT_TASK_BTF_PROTO      : i32     = 0;
-static BPF_TASK_PT_REGS_PROTO              : i32     = 0;
-static BPF_GET_CURRENT_UID_GID_PROTO       : i32     = 0;
-static BPF_GET_CURRENT_COMM_PROTO          : i32     = 0;
-static BPF_GET_SMP_PROCESSOR_ID_PROTO      : i32     = 0;
-static BPF_GET_NUMA_NODE_ID_PROTO          : i32     = 0;
-static BPF_PERF_EVENT_READ_PROTO           : i32     = 0;
-static BPF_CURRENT_TASK_UNDER_CGROUP_PROTO : i32     = 0;
-static BPF_GET_PRANDOM_U32_PROTO           : i32     = 0;
-static LOCKDOWN_BPF_WRITE_USER             : i32     = 0;
-static BPF_PROBE_READ_USER_PROTO           : i32     = 0;
-static LOCKDOWN_BPF_READ_KERNEL            : i32     = 0;
-static BPF_PROBE_READ_KERNEL_PROTO         : i32     = 0;
-static BPF_PROBE_READ_USER_STR_PROTO       : i32     = 0;
-static BPF_PROBE_READ_KERNEL_STR_PROTO     : i32     = 0;
-static BPF_CGRP_STORAGE_DELETE_PROTO       : i32     = 0;
-static BPF_SEND_SIGNAL_PROTO               : i32     = 0;
-static BPF_SEND_SIGNAL_THREAD_PROTO        : i32     = 0;
-static BPF_PERF_EVENT_READ_VALUE_PROTO     : i32     = 0;
-static BPF_GET_NS_CURRENT_PID_TGID_PROTO   : i32     = 0;
-static BPF_RINGBUF_OUTPUT_PROTO            : i32     = 0;
-static BPF_RINGBUF_RESERVE_PROTO           : i32     = 0;
-static BPF_RINGBUF_SUBMIT_PROTO            : i32     = 0;
-static BPF_RINGBUF_DISCARD_PROTO           : i32     = 0;
-static BPF_RINGBUF_QUERY_PROTO             : i32     = 0;
-static BPF_JIFFIES64_PROTO                 : i32     = 0;
-static BPF_GET_TASK_STACK_PROTO            : i32     = 0;
-static BPF_COPY_FROM_USER_PROTO            : i32     = 0;
-static BPF_COPY_FROM_USER_TASK_PROTO       : i32     = 0;
-static BPF_SNPRINTF_BTF_PROTO              : i32     = 0;
-static BPF_PER_CPU_PTR_PROTO               : i32     = 0;
-static BPF_THIS_CPU_PTR_PROTO              : i32     = 0;
-static BPF_TASK_STORAGE_GET_RECUR_PROTO    : i32     = 0;
-static BPF_TASK_STORAGE_GET_PROTO          : i32     = 0;
-static BPF_TASK_STORAGE_DELETE_RECUR_PROTO : i32     = 0;
-static BPF_TASK_STORAGE_DELETE_PROTO       : i32     = 0;
-static BPF_FOR_EACH_MAP_ELEM_PROTO         : i32     = 0;
-static BPF_SNPRINTF_PROTO                  : i32     = 0;
-static BPF_GET_FUNC_IP_PROTO_TRACING       : i32     = 0;
-static BPF_GET_BRANCH_SNAPSHOT_PROTO       : i32     = 0;
-static BPF_FIND_VMA_PROTO                  : i32     = 0;
-static BPF_PERF_EVENT_OUTPUT_PROTO         : i32     = 0;
-static BPF_GET_STACKID_PROTO               : i32     = 0;
-static BPF_GET_STACK_PROTO                 : i32     = 0;
-static BPF_OVERRIDE_RETURN_PROTO           : i32     = 0;
-static BPF_GET_FUNC_IP_PROTO_KPROBE_MULTI  : i32     = 0;
-static BPF_GET_FUNC_IP_PROTO_UPROBE_MULTI  : i32     = 0;
-static BPF_GET_FUNC_IP_PROTO_KPROBE        : i32     = 0;
-static BPF_GET_ATTACH_COOKIE_PROTO_KMULTI  : i32     = 0;
-static BPF_GET_ATTACH_COOKIE_PROTO_UMULTI  : i32     = 0;
-static BPF_GET_ATTACH_COOKIE_PROTO_TRACE   : i32     = 0;
-static BPF_PERF_EVENT_OUTPUT_PROTO_TP      : i32     = 0;
-static BPF_GET_STACKID_PROTO_TP            : i32     = 0;
-static BPF_GET_STACK_PROTO_TP              : i32     = 0;
-static PERF_MAX_TRACE_SIZE                 : i32     = 0;
-static BPF_READ                            : i32     = 0;
-static BPF_F_GET_BRANCH_RECORDS_SIZE       : i32     = 0;
-static ARG_PTR_TO_MEM_OR_NULL              : i32     = 0;
-static ARG_PTR_TO_MEM                      : i32     = 0;
-static BPF_TRACE_ITER                      : i32     = 0;
-static EEXIST                              : i32     = 0;
-static PERF_TYPE_TRACEPOINT                : i32     = 0;
-static GFP_USER                            : i32     = 0;
-static __GFP_NOWARN                        : i32     = 0;
-static ENOMEM                              : i32     = 0;
-static EFAULT                              : i32     = 0;
-static BPF_PROG_TYPE_PERF_EVENT            : i32     = 0;
-static TRACE_EVENT_FL_TRACEPOINT           : i32     = 0;
-static BPF_FD_TYPE_TRACEPOINT              : i32     = 0;
-static CONFIG_KPROBE_EVENTS                : i32     = 0;
-static TRACE_EVENT_FL_UPROBE               : i32     = 0;
-static MODULE_STATE_COMING                 : i32     = 0;
-static MODULE_STATE_GOING                  : i32     = 0;
-static GFP_KERNEL                          : i32     = 0;
-static KSYM_NAME_LEN                       : i32     = 0;
-static ENOSPC                              : i32     = 0;
-static BPF_TRACE_KPROBE_MULTI              : i32     = 0;
-static BPF_F_KPROBE_MULTI_RETURN           : i32     = 0;
-static MAX_KPROBE_MULTI_CNT                : i32     = 0;
-static BPF_LINK_TYPE_KPROBE_MULTI          : i32     = 0;
-static PATH_MAX                            : i32     = 0;
-static BPF_DW                              : i32     = 0;
+static BPF_TRACE_MODULES                   : u32     = 0;
+static RET_INTEGER                         : u32     = 0;  
+static ARG_PTR_TO_CTX                      : u32     = 0;  
+static ARG_ANYTHING                        : u32     = 0;  
+static ARG_PTR_TO_UNINIT_MEM               : u32     = 0;  
+static ARG_CONST_SIZE_OR_ZERO              : u32     = 0;  
+static MEM_RDONLY                          : u32     = 0;  
+static CAP_SYS_ADMIN                       : u32     = 0;  
+static MAX_BPRINTF_BUF                     : u32     = 0;  
+static EINVAL                              : u32     = 0;  
+static ENOENT                              : u32     = 0;  
+static EOVERFLOW                           : u32     = 0;  
+static EOPNOTSUPP                          : u32     = 0;  
+static BPF_F_INDEX_MASK                    : u32     = 0;  
+static BPF_F_CURRENT_CPU                   : u32     = 0;  
+static E2BIG                               : u32     = 0;  
+static EBUSY                               : u32     = 0;  
+static PERF_TYPE_SOFTWARE                  : u32     = 0;  
+static ARRAY_SIZE                          : u32     = 0;  
+static RET_PTR_TO_BTF_ID_TRUSTED           : u32     = 0;  
+static BTF_TRACING_TYPE_TASK               : u32     = 0;  
+static ARG_PTR_TO_BTF_ID                   : u32     = 0;  
+static RET_PTR_TO_BTF_ID                   : u32     = 0;  
+static ARG_CONST_MAP_PTR                   : u32     = 0;  
+static PF_KTHREAD                          : u32     = 0;  
+static PF_EXITING                          : u32     = 0;  
+static SEND_SIG_PRIV                       : u32     = 0;  
+static PIDTYPE_TGID                        : u32     = 0;  
+static PIDTYPE_PID                         : u32     = 0;  
+static BTF_F_COMPACT                       : u32     = 0;  
+static BTF_F_NONAME                        : u32     = 0;  
+static BTF_F_PTR_RAW                       : u32     = 0;  
+static BTF_F_ZERO                          : u32     = 0;  
+static KPROBE_FLAG_ON_FUNC_ENTRY           : u32     = 0;  
+static ARG_PTR_TO_LONG                     : u32     = 0;  
+static BPF_MAP_LOOKUP_ELEM_PROTO           : u32     = 0;
+static BPF_MAP_UPDATE_ELEM_PROTO           : u32     = 0;
+static BPF_MAP_DELETE_ELEM_PROTO           : u32     = 0;
+static BPF_MAP_PUSH_ELEM_PROTO             : u32     = 0;
+static BPF_MAP_POP_ELEM_PROTO              : u32     = 0;
+static BPF_MAP_PEEK_ELEM_PROTO             : u32     = 0;
+static BPF_MAP_LOOKUP_PERCPU_ELEM_PROTO    : u32     = 0;
+static BPF_KTIME_GET_NS_PROTO              : u32     = 0;
+static BPF_KTIME_GET_BOOT_NS_PROTO         : u32     = 0;
+static BPF_TAIL_CALL_PROTO                 : u32     = 0;
+static BPF_GET_CURRENT_PID_TGID_PROTO      : u32     = 0;
+static BPF_GET_CURRENT_TASK_PROTO          : u32     = 0;
+static BPF_GET_CURRENT_TASK_BTF_PROTO      : u32     = 0;
+static BPF_TASK_PT_REGS_PROTO              : u32     = 0;
+static BPF_GET_CURRENT_UID_GID_PROTO       : u32     = 0;
+static BPF_GET_CURRENT_COMM_PROTO          : u32     = 0;
+static BPF_GET_SMP_PROCESSOR_ID_PROTO      : u32     = 0;
+static BPF_GET_NUMA_NODE_ID_PROTO          : u32     = 0;
+static BPF_PERF_EVENT_READ_PROTO           : u32     = 0;
+static BPF_CURRENT_TASK_UNDER_CGROUP_PROTO : u32     = 0;
+static BPF_GET_PRANDOM_U32_PROTO           : u32     = 0;
+static LOCKDOWN_BPF_WRITE_USER             : u32     = 0;
+static BPF_PROBE_READ_USER_PROTO           : u32     = 0;
+static LOCKDOWN_BPF_READ_KERNEL            : u32     = 0;
+static BPF_PROBE_READ_KERNEL_PROTO         : u32     = 0;
+static BPF_PROBE_READ_USER_STR_PROTO       : u32     = 0;
+static BPF_PROBE_READ_KERNEL_STR_PROTO     : u32     = 0;
+static BPF_CGRP_STORAGE_DELETE_PROTO       : u32     = 0;
+static BPF_SEND_SIGNAL_PROTO               : u32     = 0;
+static BPF_SEND_SIGNAL_THREAD_PROTO        : u32     = 0;
+static BPF_PERF_EVENT_READ_VALUE_PROTO     : u32     = 0;
+static BPF_GET_NS_CURRENT_PID_TGID_PROTO   : u32     = 0;
+static BPF_RINGBUF_OUTPUT_PROTO            : u32     = 0;
+static BPF_RINGBUF_RESERVE_PROTO           : u32     = 0;
+static BPF_RINGBUF_SUBMIT_PROTO            : u32     = 0;
+static BPF_RINGBUF_DISCARD_PROTO           : u32     = 0;
+static BPF_RINGBUF_QUERY_PROTO             : u32     = 0;
+static BPF_JIFFIES64_PROTO                 : u32     = 0;
+static BPF_GET_TASK_STACK_PROTO            : u32     = 0;
+static BPF_COPY_FROM_USER_PROTO            : u32     = 0;
+static BPF_COPY_FROM_USER_TASK_PROTO       : u32     = 0;
+static BPF_SNPRINTF_BTF_PROTO              : u32     = 0;
+static BPF_PER_CPU_PTR_PROTO               : u32     = 0;
+static BPF_THIS_CPU_PTR_PROTO              : u32     = 0;
+static BPF_TASK_STORAGE_GET_RECUR_PROTO    : u32     = 0;
+static BPF_TASK_STORAGE_GET_PROTO          : u32     = 0;
+static BPF_TASK_STORAGE_DELETE_RECUR_PROTO : u32     = 0;
+static BPF_TASK_STORAGE_DELETE_PROTO       : u32     = 0;
+static BPF_FOR_EACH_MAP_ELEM_PROTO         : u32     = 0;
+static BPF_SNPRINTF_PROTO                  : u32     = 0;
+static BPF_GET_FUNC_IP_PROTO_TRACING       : u32     = 0;
+static BPF_GET_BRANCH_SNAPSHOT_PROTO       : u32     = 0;
+static BPF_FIND_VMA_PROTO                  : u32     = 0;
+static BPF_PERF_EVENT_OUTPUT_PROTO         : u32     = 0;
+static BPF_GET_STACKID_PROTO               : u32     = 0;
+static BPF_GET_STACK_PROTO                 : u32     = 0;
+static BPF_OVERRIDE_RETURN_PROTO           : u32     = 0;
+static BPF_GET_FUNC_IP_PROTO_KPROBE_MULTI  : u32     = 0;
+static BPF_GET_FUNC_IP_PROTO_UPROBE_MULTI  : u32     = 0;
+static BPF_GET_FUNC_IP_PROTO_KPROBE        : u32     = 0;
+static BPF_GET_ATTACH_COOKIE_PROTO_KMULTI  : u32     = 0;
+static BPF_GET_ATTACH_COOKIE_PROTO_UMULTI  : u32     = 0;
+static BPF_GET_ATTACH_COOKIE_PROTO_TRACE   : u32     = 0;
+static BPF_PERF_EVENT_OUTPUT_PROTO_TP      : u32     = 0;
+static BPF_GET_STACKID_PROTO_TP            : u32     = 0;
+static BPF_GET_STACK_PROTO_TP              : u32     = 0;
+static PERF_MAX_TRACE_SIZE                 : u32     = 0;
+static BPF_READ                            : u32     = 0;
+static BPF_F_GET_BRANCH_RECORDS_SIZE       : u32     = 0;
+static ARG_PTR_TO_MEM_OR_NULL              : u32     = 0;
+static ARG_PTR_TO_MEM                      : u32     = 0;
+static BPF_TRACE_ITER                      : u32     = 0;
+static EEXIST                              : u32     = 0;
+static PERF_TYPE_TRACEPOINT                : u32     = 0;
+static GFP_USER                            : u32     = 0;
+static __GFP_NOWARN                        : u32     = 0;
+static ENOMEM                              : u32     = 0;
+static EFAULT                              : u32     = 0;
+static BPF_PROG_TYPE_PERF_EVENT            : u32     = 0;
+static TRACE_EVENT_FL_TRACEPOINT           : u32     = 0;
+static BPF_FD_TYPE_TRACEPOINT              : u32     = 0;
+static CONFIG_KPROBE_EVENTS                : u32     = 0;
+static TRACE_EVENT_FL_UPROBE               : u32     = 0;
+static MODULE_STATE_COMING                 : u32     = 0;
+static MODULE_STATE_GOING                  : u32     = 0;
+static GFP_KERNEL                          : u32     = 0;
+static KSYM_NAME_LEN                       : u32     = 0;
+static ENOSPC                              : u32     = 0;
+static BPF_TRACE_KPROBE_MULTI              : u32     = 0;
+static BPF_F_KPROBE_MULTI_RETURN           : u32     = 0;
+static MAX_KPROBE_MULTI_CNT                : u32     = 0;
+static BPF_LINK_TYPE_KPROBE_MULTI          : u32     = 0;
+static PATH_MAX                            : u32     = 0;
+static BPF_DW                              : u32     = 0;
 
 // extern "C" {
 //     fn bpf_perf_event_output_tp(ctx: *const u8, map: *const u8, flags: u64, data: *const u8, size: usize) -> i32;
@@ -377,42 +377,46 @@ struct bpf_attr{
 struct bpf_link_primer{
     my_field_null: *mut u32,
 }
-
-
-
-
-struct bpf_func_proto {
-    func: extern "C" fn(*mut u32,...) -> u32, // 函数指针，接受一个可变参数列表，返回u32 // 函数指针，接受一个可变参数列表，返回u32
-    ret_type: u32,                      // 返回类型
-    gpl_only: bool,
-    arg1_type: u32,                     // 第一个参数的类型
-    arg2_type: u32,                     // 第二个参数的类型
-    arg3_type: u32,                     // 第三个参数的类型
-    arg4_type: u32,                     // 第四个参数的类型
-    arg5_type: u32,                     // 第五个参数的类型
-    arg1_btf_id : *const i32,           // 第一个参数的BTF ID
-    ret_btf_id: *const i32,             // 返回值的BTF ID
-    // 根据需要添加更多字段
-}
-struct bpf_bprintf_data {
-    buffer: Vec<u8>,
-    size: usize,
-    capacity: usize,
-    get_bin_args:bool,
-}
-#[repr(C)]
-struct perf_sample_data {
-    addr: u64,
-    period: u64,
-    context: Context,
-    // 其他性能数据字段...
+extern "C"
+{
+    fn seq_bprintf(a:i32,b:i32,c:i32)->i32;
+    fn seq_has_overflowed(a:i32)->i32;
 }
 
-#[repr(C)]
-struct Context {
-    pid: u32,
-    tid: u32,
-}
+
+
+// struct bpf_func_proto {
+//     func: extern "C" fn(*mut u32,...) -> u32, // 函数指针，接受一个可变参数列表，返回u32 // 函数指针，接受一个可变参数列表，返回u32
+//     ret_type: u32,                      // 返回类型
+//     gpl_only: bool,
+//     arg1_type: u32,                     // 第一个参数的类型
+//     arg2_type: u32,                     // 第二个参数的类型
+//     arg3_type: u32,                     // 第三个参数的类型
+//     arg4_type: u32,                     // 第四个参数的类型
+//     arg5_type: u32,                     // 第五个参数的类型
+//     arg1_btf_id : *const i32,           // 第一个参数的BTF ID
+//     ret_btf_id: *const i32,             // 返回值的BTF ID
+//     // 根据需要添加更多字段
+// }
+// struct bpf_bprintf_data {
+//     buffer: Vec<u8>,
+//     size: usize,
+//     capacity: usize,
+//     get_bin_args:bool,
+// }
+// #[repr(C)]
+// struct perf_sample_data {
+//     addr: u64,
+//     period: u64,
+//     context: Context,
+//     // 其他性能数据字段...
+// }
+
+// #[repr(C)]
+// struct Context {
+//     pid: u32,
+//     tid: u32,
+// }
 //48-83
 
 
@@ -632,7 +636,7 @@ fn bpf_probe_read_user_str(dst: NonNull<c_void>,size: u32,unsafe_ptr:NonNull<c_v
 static bpf_probe_read_user_str_proto : bpf_func_proto = bpf_func_proto {
     func: bpf_probe_read_user_str, // 假设 bpf_probe_read_user 是已经定义的 Rust 函数
     gpl_only: true,
-    ret_type: RetType::RET_INTEGER,
+    ret_type: RET_INTEGER,
     arg1_type: ArgType::ARG_PTR_TO_UNINIT_MEM,
     arg2_type: ArgType::ARG_CONST_SIZE_OR_ZERO,
     arg3_type: ArgType::ARG_ANYTHING,
@@ -1028,17 +1032,17 @@ struct SeqFile;
 // struct Btf;
 
 // BPF函数原型结构体
-#[repr(C)]
-struct BpfFuncProto {
-    func: unsafe extern "C" fn(),
-    gpl_only: bool,
-    ret_type: ReturnType,
-    arg1_type: ArgType,
-    arg2_type: ArgType,
-    arg3_type: ArgType,
-    arg4_type: ArgType,
-    // 对于具有更多参数的函数，可以继续添加字段
-}
+// #[repr(C)]
+// struct BpfFuncProto {
+//     func: unsafe extern "C" fn(),
+//     gpl_only: bool,
+//     ret_type: ReturnType,
+//     arg1_type: ArgType,
+//     arg2_type: ArgType,
+//     arg3_type: ArgType,
+//     arg4_type: ArgType,
+//     // 对于具有更多参数的函数，可以继续添加字段
+// }
 
 // 返回类型和参数类型的枚举
 #[derive(Clone, Copy)]
@@ -1081,6 +1085,7 @@ unsafe fn bpf_get_trace_vprintk_proto() -> &'static BpfFuncProto {
     __set_printk_clr_event();
     &BPF_TRACE_VPRINTK_PROTO
 }
+
 
 // BPF调用实现
 unsafe extern "C" fn bpf_seq_printf(m: *mut SeqFile, fmt: *const c_char, fmt_size: c_uint, args: *const c_void, data_len: c_uint) -> c_int {
