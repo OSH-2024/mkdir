@@ -42,12 +42,34 @@ libclang 是 Clang 的一个库，用于解析 C 代码。它是 bindgen 的一�
 4. kernel hacking --> Sample Kernel code --> rust Samples 
 最后选中rust BPF tarce 模块
 
+添加module测试
 ![alt text](image-1.png)
 ![alt text](image-2.png)
 
 ## 修改配置文件 makefile 以及Kconfig
+bpftrace相关编译选项：路径：General setup --> Bpf subsystem
+![alt text](image-25.png)
+![alt text](image-26.png)
 
 
+![alt text](image-27.png)
+![alt text](image-28.png)
+在kconfig中添加选项：
+```shell
+config RUST_BPFTRACE
+    bool "Enable RUST_BPFTRACE feature"
+    depends on BPF_SYSCALL
+    help
+      This option enables the RUST_BPFTRACE feature in the BPF subsystem.
+      
+      If unsure, say N.
+0
+```
+
+在Makefile中添加选项：
+```shell
+obj-$(CONFIG_RUST_BPFTRACE) += rust_bpftrace/
+```
 
 # 编译kernel
 
