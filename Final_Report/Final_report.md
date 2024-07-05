@@ -1,4 +1,4 @@
-# 关于用Rust改写bpf_trace模块的结题报告
+![report_pic_ 1](https://github.com/OSH-2024/mkdir/assets/161458262/fc874da3-3684-410a-882a-f73f8f99662d)# 关于用Rust改写bpf_trace模块的结题报告
 ####  mkdir队(组长:潘铂凯 组员:胡揚嘉 金培晟 刘宇恒 王翔辉)
 
 ## 目录
@@ -560,7 +560,7 @@ mod bpf_kfunc {
 ### 工作进展与成员分工
 **提交分布图**
 
-![alt text](<7Y%MDVG$Z_WY)[KDUMJ2)6S.png>)
+![alt text](<report_pic_ 1.png>)
 
 **项目进展与成员分工总览**
 |项目阶段|阶段时间|阶段简介/阶段成果|工作分工|
