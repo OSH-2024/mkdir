@@ -1,3 +1,16 @@
+- [准备编译环境](#准备编译环境)
+- [修改编译选项](#修改编译选项)
+  - [修改配置文件 makefile 以及Kconfig](#修改配置文件-makefile-以及kconfig)
+- [编译kernel](#编译kernel)
+- [使用busybox制作初始内存盘](#使用busybox制作初始内存盘)
+    - [步骤 1: 编译BusyBox](#步骤-1-编译busybox)
+    - [步骤 2: 创建initramfs目录结构](#步骤-2-创建initramfs目录结构)
+    - [步骤 3: 添加必要的配置文件和脚本](#步骤-3-添加必要的配置文件和脚本)
+    - [步骤 4: 打包initramfs](#步骤-4-打包initramfs)
+- [使用qemu启动内核](#使用qemu启动内核)
+- [bpftrace](#bpftrace)
+- [测试](#测试)
+
 
 # 准备编译环境
 
@@ -63,7 +76,7 @@ config RUST_BPFTRACE
       This option enables the RUST_BPFTRACE feature in the BPF subsystem.
       
       If unsure, say N.
-0
+
 ```
 
 在Makefile中添加选项：
@@ -79,10 +92,11 @@ make llvm=1 -j8
 ```
 
 # 使用busybox制作初始内存盘
+简介：busybox是一个集成了许多Linux工具的单个可执行文件，它可以用作最小的文件系统。在这里，我们将使用BusyBox制作一个初始内存盘（initramfs），以便在启动时加载它。
+
 必要性：内核启动后，需要一个最小的文件系统，才能运行程序
 作用：提供基本软件环境 提供文件系统 提供交互的shell界面
-简介：······
-目标：制作一个最小的initramfs，包含busybox，可交互，支持lsmod命令
+目标：制作一个最小的initramfs，包含busybox，可交互
 1. 下载busybox
 2. 编译busybox
 3. 制作initramfs
@@ -232,3 +246,5 @@ bpftrace -l '*'
 10. `bpftrace -e 'tracepoint:syscalls:sys_enter_openat /cgroup == cgroupid("/sys/fs/cgroup/unified/mycg")/ { printf("%s\n", str(args->filename)); }'`: 跟踪并打印属于特定 cgroup-v2（`/sys/fs/cgroup/unified/mycg`）的进程尝试打开的文件名称。
 
 ![alt text](image-21.png)
+
+
