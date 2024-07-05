@@ -1,4 +1,4 @@
-![report_pic_ 1](https://github.com/OSH-2024/mkdir/assets/161458262/fc874da3-3684-410a-882a-f73f8f99662d)# 关于用Rust改写bpf_trace模块的结题报告
+# 关于用Rust改写bpf_trace模块的结题报告
 ####  mkdir队(组长:潘铂凯 组员:胡揚嘉 金培晟 刘宇恒 王翔辉)
 
 ## 目录
