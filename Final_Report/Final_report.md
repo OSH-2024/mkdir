@@ -559,7 +559,9 @@ mod bpf_kfunc {
 
 ### 工作进展与成员分工
 **提交分布图**
-![alt text](HS1AY4~CV[_W0DV1NNJKSQV.png)
+
+![alt text](<7Y%MDVG$Z_WY)[KDUMJ2)6S.png>)
+
 **项目进展与成员分工总览**
 |项目阶段|阶段时间|阶段简介/阶段成果|工作分工|
 |:-:|:-:|:-|:-:|
