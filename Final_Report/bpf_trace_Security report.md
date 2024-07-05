@@ -111,7 +111,7 @@ fn bpf_event_output(map: NonNull<bpf_map>, flags: u64, meta: NonNull<c_void>, me
 
 ```rust
 pub struct BpfFuncProto {
-    func: fn() -> (),
+    func: fn(i32, ...) -> i32,
     gpl_only: bool,
     ret_type: RetType,
     arg1_type: ArgType,
@@ -202,7 +202,7 @@ fn bpf_get_probe_write_proto() -> Option<&'static BpfFuncProto> {
     // 输出警告信息,提示正在安装可能损坏用户内存的程序
     pr_warn_ratelimited!(
         "{} is installing a program with bpf_probe_write_user helper that may corrupt user memory!",
-        format!("{}[{}]", current().comm(), current().pid())
+        format!("{}[{}]", current.comm(), current.pid())
     );
 
     // 返回 bpf_probe_write_user_proto 的不可变引用
