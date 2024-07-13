@@ -172,18 +172,16 @@ static FS_KFUNC_SET_IDS                   : u32     = 0;
 
 
 struct bpf_func_proto {
-    func: unsafe extern "C" fn() , // 函数指针，接受一个可变参数列表，返回u32 // 函数指针，接受一个可变参数列表，返回u32
-    ret_type: u32,                      // 返回类型
+    func: i32 , 
+    ret_type: u32,                      
     gpl_only: bool,
     arg1_type: u32,                     // 第一个参数的类型
     arg2_type: u32,                     // 第二个参数的类型
     arg3_type: u32,                     // 第三个参数的类型
     arg4_type: u32,                     // 第四个参数的类型
     arg5_type: u32,                     // 第五个参数的类型
-    // arg1_btf_id : *const i32,           // 第一个参数的BTF ID
-    // ret_btf_id: *const i32,             // 返回值的BTF ID
-    // // 根据需要添加更多字段
 }
+
 struct bpf_bprintf_data {
     buffer: Vec<u8>,
     size: usize,
@@ -195,7 +193,30 @@ struct perf_sample_data {
     addr: u64,
     period: u64,
     context: Context,
-    // 其他性能数据字段...
+}
+struct BpfFuncProto {
+    func : u32,
+    ret_type: ArgType,                
+    gpl_only: bool,
+    arg1_type: ArgType,               
+    arg2_type: ArgType,               
+    arg3_type: ArgType,               
+    arg4_type: ArgType,               
+    arg5_type: ArgType,               
+}
+impl BpfFuncProto{
+    fn BpfOverrideReturn(&self,&dst,&size,&unsafe_ptr) -> u32 {
+        unsafe{
+            bpf_probe_read_user_common(dst, size, unsafe_ptr);
+        }
+    }
+    fn all(&self,...){
+        match (self.func){
+            1 => self.BpfOverrideReturn(...),
+            ...
+        }
+    }
+
 }
 
 #[repr(C)]
@@ -1131,7 +1152,7 @@ struct BpfBprintfData {
 // Rust版本的bpf_trace_vprintk函数
 
 
-unsafe fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len: u32) -> i32 {
+fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len: u32) -> i32 {
     let mut data = BpfBprintfData {
         get_bin_args: true,
         get_buf: true,
@@ -1144,13 +1165,13 @@ unsafe fn bpf_trace_vprintk(fmt: &str, fmt_size: u32, args: *const u64, data_len
     }
     let num_args = (data_len / 8) as usize;
 
-    let ret = bpf_bprintf_prepare(fmt, fmt_size, args, num_args, &mut data);
+    let ret = unsafe{bpf_bprintf_prepare(fmt, fmt_size, args, num_args, &mut data)};
     if ret < 0 {
         return ret;
     }
 
-    let ret = bstr_printf(&mut data.buf, MAX_BPRINTF_BUF, fmt, &data.bin_args);
-    trace_bpf_trace_printk(&data.buf);
+    let ret = unsafe{bstr_printf(&mut data.buf, MAX_BPRINTF_BUF, fmt, &data.bin_args)};
+    unsafe{trace_bpf_trace_printk(&data.buf)};
 
     ret
 }
