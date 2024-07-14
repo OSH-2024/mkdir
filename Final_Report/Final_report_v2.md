@@ -3,10 +3,6 @@
 
 ## 目录
 
-
-- [关于用Rust改写bpf\_trace模块的结题报告](#关于用rust改写bpf_trace模块的结题报告)
-      - [mkdir队(组长:潘铂凯 组员:胡揚嘉 金培晟 刘宇恒 王翔辉)](#mkdir队组长潘铂凯-组员胡揚嘉-金培晟-刘宇恒-王翔辉)
-  - [目录](#目录)
   - [项目背景和调研](#项目背景和调研)
     - [Linux内核的安全挑战](#linux内核的安全挑战)
     - [Rust改写的优势简介](#rust改写的优势简介)
@@ -63,6 +59,7 @@
 
 ### Linux内核的安全挑战
 **背景问题：**  Linux系统常用的编程语言为C和C++，这两种语言在内存管理方面依赖于手动操作，缺乏自动内存管理和越界检查机制，这使得它们容易受到缓冲区溢出等安全问题的影响。
+
 **缓冲区溢出的本质：**
 1. **内存控制不足：** 在C和C++中，内存的分配、使用和释放都需要程序员手动管理。这种手动操作的方式容易导致内存泄漏、越界访问和双重释放等问题。
 2. **缺乏自动内存管理和越界检查：** 与现代高级语言（如Rust、Java等）不同，C和C++没有内置的自动垃圾回收机制，也没有强大的运行时检查来防止越界访问。这使得程序员必须非常小心地编写代码，以避免潜在的安全漏洞。
@@ -833,6 +830,7 @@ mod bpf_kfunc {
 
 ### 未来展望
 Berkeley Packet Filter (BPF) 技术近年来在内核开发和系统监控领域取得了显著进展。我们希望未来BPF的应用范围将进一步扩展，尤其是在高性能网络处理、实时系统监控和动态追踪领域。随着BPF生态系统的成熟，我们预测BPF工具和框架将更加用户友好，并且将有更多的社区和企业参与其开发和应用。BPF的灵活性和高效性将促使更多的开发者在生产环境中部署BPF，从而提升系统性能和安全性。相信我们的工作对于BPF技术的安全性和性能提升也将发光发热。
+
 Linux内核安全性将继续成为关注的焦点。随着攻击手段的不断演变和复杂化，内核级别的安全防护措施也将不断进化。我们预期，Rust语言在内核模块中的应用将显著提升内核的内存安全性和稳定性，减少因内存管理错误引发的漏洞。通过引入Rust等现代编程语言，我们能够建立更强大、更健壮的内核安全体系。此外，基于BPF技术的安全监控和动态防护手段将进一步增强内核的防御能力，使系统能够更及时地检测和响应潜在威胁。因此，我们的工作能够进一步保证BPF技术的正常工作。
 
 - **性能优化与扩展：** 我们将进一步优化Rust版bpftrace的性能，使其在各种复杂应用场景中表现更佳。同时，探索将更多高级特性和功能集成到bpftrace中，以满足不同用户的需求。
@@ -845,17 +843,29 @@ Linux内核安全性将继续成为关注的焦点。随着攻击手段的不断
 
 ## 参考文献
 [1] Steve Klabnik, Carol Nichols. The Rust Programming Language. No Starch Press, 2018
+
 [2] Nicholas D. Matsakis, Felix S. Klock II. The Rust Language. ACM SIGAda Ada Letters, 2014
+
 [3] Ralf Jung, Jacques-Henri Jourdan, Robbert Krebbers, Derek Dreyer. RustBelt: Securing the Foundations of the Rust Programming Language. Proceedings of the ACM on Programming Languages, 2018
+
 [4] Abhiram Balasubramanian, Marek S. Baranowski, Anton Burtsev, Aurojit Panda, Zvonimir Rakamarić, Leonid Ryzhyk. System Programming in Rust: Beyond Safety. HotOS, 2017
+
 [5]Hui Xu, Zhuangbin Chen, Mingshen Sun, Yangfan Zhou, Michael Stumm. Memory-Safety Challenge Considered Solved? An In-Depth Study with All Rust CVEs. arXiv preprint arXiv, 2020
+
 [6] Klabnik, S., & Nichols, C. (2019). *The Rust Programming Language*. No Starch Press.
+
 [7] Gregg, B. (2019). *BPF Performance Tools: Linux System and Application Observability*. Addison-Wesley Professional.
+
 [8]  梁红, 杨鹏. Rust语言安全性分析与应用. 网络空间安全, 2020
+
 [9]  陈渝, 尹霞, 张峰. Rust语言机制与安全性. 软件学报, 2019
+
 [10]  尹霞, 张峰, 陈渝. Rust安全编程模式. 软件学报, 2019
+
 [11]  郭东东, 王之泰, 王飞. Rust语言的生命周期机制研究. 小型微型计算机系统,2020
+
 [12]  张峰, 尹霞, 陈渝. Rust语言的异步编程模型研究. 软件学报, 2019
+
 [13] 张汉东, 李先静, 郑纬民. Rust语言的模式匹配机制研究. 软件学报, 2019
 
 ## 相关链接
